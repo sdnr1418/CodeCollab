@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Code2, Play, Save, UserPlus } from 'lucide-react'
+import { ArrowLeft, Code2, FolderTree, MessageSquare, Play, Save, UserPlus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Button from '../../components/ui/Button'
 import AvatarGroup from '../../components/ui/AvatarGroup'
@@ -13,7 +13,8 @@ import {
 } from '../files/filesSlice'
 import { runActiveFile } from './outputSlice'
 
-function EditorToolbar({ room }) {
+// onOpenFiles / onOpenChat are only passed on phones, where those panels are drawers
+function EditorToolbar({ room, onOpenFiles, onOpenChat }) {
   const dispatch = useDispatch()
   const activeFile = useSelector(selectActiveFile)
   const language = useSelector(selectActiveLanguage)
@@ -32,14 +33,23 @@ function EditorToolbar({ room }) {
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-gray-800 bg-gray-950 px-4">
-      <div className="flex min-w-0 items-center gap-4">
+    <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-gray-800 bg-gray-950 px-3 sm:gap-4 sm:px-4">
+      <div className="flex min-w-0 items-center gap-3 sm:gap-4">
         <Link
           to="/dashboard"
           className="flex h-8 items-center gap-1.5 rounded-md border border-gray-700 bg-gray-800 px-3 text-xs font-medium hover:bg-gray-700"
         >
-          <ArrowLeft size={14} /> Dashboard
+          <ArrowLeft size={14} /> <span className="hidden sm:inline">Dashboard</span>
         </Link>
+        {onOpenFiles && (
+          <button
+            onClick={onOpenFiles}
+            className="text-gray-300 hover:text-white"
+            aria-label="Open files"
+          >
+            <FolderTree size={18} />
+          </button>
+        )}
         <div className="flex min-w-0 items-baseline gap-2">
           <h1 className="truncate font-semibold">{room.name}</h1>
           <span className="hidden font-mono text-xs text-gray-500 md:inline">{room.id}</span>
@@ -70,16 +80,13 @@ function EditorToolbar({ room }) {
         <div className="mr-2 hidden lg:block">
           <AvatarGroup users={onlineMembers} max={4} size="md" />
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleShare}
-          className="hidden sm:inline-flex"
-        >
-          <UserPlus size={14} /> Share / Invite
-        </Button>
+        <div className="hidden sm:block">
+          <Button variant="secondary" size="sm" onClick={handleShare}>
+            <UserPlus size={14} /> Share / Invite
+          </Button>
+        </div>
         <Button variant="secondary" size="sm" onClick={handleSave} disabled={unsavedCount === 0}>
-          <Save size={14} /> Save
+          <Save size={14} /> <span className="hidden sm:inline">Save</span>
         </Button>
         <Button
           size="sm"
@@ -89,6 +96,15 @@ function EditorToolbar({ room }) {
         >
           {!running && <Play size={14} />} {running ? 'Running…' : 'Run'}
         </Button>
+        {onOpenChat && (
+          <button
+            onClick={onOpenChat}
+            className="ml-1 text-gray-300 hover:text-white"
+            aria-label="Open chat"
+          >
+            <MessageSquare size={18} />
+          </button>
+        )}
       </div>
     </header>
   )

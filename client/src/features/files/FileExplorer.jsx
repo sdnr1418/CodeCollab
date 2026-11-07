@@ -24,7 +24,8 @@ function FileNameInput({ initial = '', onDone }) {
   )
 }
 
-function FileExplorer({ roomId }) {
+// onSelect (optional) runs after a file is opened, e.g. to close the mobile drawer
+function FileExplorer({ roomId, onSelect }) {
   const { items, activeFileId, unsavedIds } = useSelector((state) => state.files)
   const dispatch = useDispatch()
   const [creating, setCreating] = useState(false)
@@ -66,7 +67,10 @@ function FileExplorer({ roomId }) {
           ) : (
             <li key={file.id} className="group relative">
               <button
-                onClick={() => dispatch(fileSelected(file.id))}
+                onClick={() => {
+                  dispatch(fileSelected(file.id))
+                  onSelect?.()
+                }}
                 className={`flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-sm ${
                   file.id === activeFileId
                     ? 'bg-gray-800 text-white'
@@ -76,10 +80,10 @@ function FileExplorer({ roomId }) {
                 <FileText size={14} className="shrink-0" />
                 <span className="truncate">{file.name}</span>
                 {unsavedIds.includes(file.id) && (
-                  <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400 group-hover:hidden" />
+                  <span className="ml-auto hidden h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400 md:block md:group-hover:hidden" />
                 )}
               </button>
-              <span className="absolute top-1/2 right-2 hidden -translate-y-1/2 gap-2 text-gray-400 group-hover:flex">
+              <span className="absolute top-1/2 right-2 flex -translate-y-1/2 gap-3 text-gray-400 md:hidden md:gap-2 md:group-hover:flex">
                 <button
                   onClick={() => setRenamingId(file.id)}
                   className="hover:text-white"

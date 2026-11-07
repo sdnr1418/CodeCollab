@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
 import { Group, Panel, Separator } from 'react-resizable-panels'
@@ -9,6 +9,8 @@ import FileTabs from '../features/files/FileTabs'
 import CodeEditor from '../features/editor/CodeEditor'
 import OutputPanel from '../features/editor/OutputPanel'
 import RoomSidebar from '../features/rooms/RoomSidebar'
+import Drawer from '../components/ui/Drawer'
+import useMediaQuery from '../hooks/useMediaQuery'
 import { fetchRoom } from '../features/rooms/roomsSlice'
 import { fetchFiles } from '../features/files/filesSlice'
 import { fetchMessages } from '../features/chat/chatSlice'
@@ -22,6 +24,9 @@ function RoomPage() {
   const { roomId } = useParams()
   const dispatch = useDispatch()
   const { current: room, currentStatus } = useSelector((state) => state.rooms)
+  const isMobile = useMediaQuery('(max-width: 767px)') // below Tailwind's md breakpoint
+  const [drawer, setDrawer] = useState(null) // 'files' | 'chat' | null
+  const closeDrawer = () => setDrawer(null)
 
   useEffect(() => {
     dispatch(fetchRoom(roomId))
@@ -49,6 +54,43 @@ function RoomPage() {
     )
   }
 
+  const editor = (
+    <div className="flex h-full flex-col">
+      <FileTabs />
+      <div className="min-h-0 flex-1">
+        <CodeEditor />
+      </div>
+    </div>
+  )
+
+  // Phones: editor on top, output below, files and chat in slide-in drawers
+  if (isMobile) {
+    return (
+      <div className="flex h-full flex-col bg-gray-950">
+        <EditorToolbar
+          room={room}
+          onOpenFiles={() => setDrawer('files')}
+          onOpenChat={() => setDrawer('chat')}
+        />
+        <Group orientation="vertical" className="min-h-0 flex-1">
+          <Panel defaultSize="65%" minSize="25%">
+            {editor}
+          </Panel>
+          <Separator className={hHandle} />
+          <Panel defaultSize="35%" minSize="15%">
+            <OutputPanel />
+          </Panel>
+        </Group>
+        <Drawer open={drawer === 'files'} side="left" title={room.name} onClose={closeDrawer}>
+          <FileExplorer roomId={room.id} onSelect={closeDrawer} />
+        </Drawer>
+        <Drawer open={drawer === 'chat'} side="right" title={room.name} onClose={closeDrawer}>
+          <RoomSidebar room={room} />
+        </Drawer>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-full flex-col bg-gray-950">
       <EditorToolbar room={room} />
@@ -60,12 +102,7 @@ function RoomPage() {
         <Panel defaultSize="58%" minSize="30%">
           <Group orientation="vertical">
             <Panel defaultSize="68%" minSize="20%">
-              <div className="flex h-full flex-col">
-                <FileTabs />
-                <div className="min-h-0 flex-1">
-                  <CodeEditor />
-                </div>
-              </div>
+              {editor}
             </Panel>
             <Separator className={hHandle} />
             <Panel defaultSize="32%" minSize="10%">
