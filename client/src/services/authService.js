@@ -1,4 +1,4 @@
-// Phase 1: checks mock users. Phase 2: replace the bodies with calls to the Express API.
+// Phase 1: checks mock users. Phase 2: replace bodies with calls to the Express API.
 import { mockUsers } from '../mocks/users'
 import { mockDelay } from '../utils/mockDelay'
 
@@ -10,5 +10,8 @@ export async function login(email, password) {
 }
 
 export async function register(name, email) {
-  return mockDelay({ user: { id: crypto.randomUUID(), name, email }, token: 'mock-jwt-token' })
+  return mockDelay({
+    user: { id: crypto.randomUUID(), name, email, color: 'bg-indigo-500' },
+    token: 'mock-jwt-token',
+  })
 }

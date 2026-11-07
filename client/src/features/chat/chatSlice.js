@@ -9,8 +9,23 @@ const chatSlice = createSlice({
   name: 'chat',
   initialState: { messages: [] },
   reducers: {
-    messageSent(state, action) {
-      state.messages.push(action.payload)
+    messageSent: {
+      reducer(state, action) {
+        state.messages.push(action.payload)
+      },
+      // prepare builds the full message object, so components only pass text + user
+      prepare({ roomId, user, text }) {
+        return {
+          payload: {
+            id: crypto.randomUUID(),
+            roomId,
+            type: 'message',
+            user,
+            text,
+            sentAt: new Date().toISOString(),
+          },
+        }
+      },
     },
   },
   extraReducers: (builder) => {
