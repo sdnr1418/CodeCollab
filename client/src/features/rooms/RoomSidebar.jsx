@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useSelector } from 'react-redux'
+import { X } from 'lucide-react'
 import ChatPanel from '../chat/ChatPanel'
 import MembersPanel from './MembersPanel'
 
-// Right-hand panel with "Chat" and "Members" tabs
-function RoomSidebar({ room }) {
+// Right-hand panel with "Chat" and "Members" tabs.
+// onClose is only passed on desktop, where the panel can be hidden.
+function RoomSidebar({ room, onClose }) {
   const [tab, setTab] = useState('chat')
   const messageCount = useSelector(
     (state) => state.chat.messages.filter((m) => m.type === 'message').length,
@@ -31,6 +33,16 @@ function RoomSidebar({ room }) {
         <button className={tabClass('members')} onClick={() => setTab('members')}>
           Members <span className="text-xs text-gray-500">{room.members.length}</span>
         </button>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="ml-auto self-center rounded p-1 text-gray-400 hover:bg-gray-800 hover:text-white"
+            aria-label="Hide chat panel"
+            title="Hide chat panel"
+          >
+            <X size={16} />
+          </button>
+        )}
       </div>
       <div className="min-h-0 flex-1">
         {tab === 'chat' ? <ChatPanel roomId={room.id} /> : <MembersPanel room={room} />}

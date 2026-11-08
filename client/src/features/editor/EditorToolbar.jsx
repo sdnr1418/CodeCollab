@@ -14,8 +14,9 @@ import {
 import RoomActions from '../rooms/RoomActions'
 import { runActiveFile } from './outputSlice'
 
-// onOpenFiles / onOpenChat are only passed on phones, where those panels are drawers
-function EditorToolbar({ room, onOpenFiles, onOpenChat }) {
+// onOpenFiles is only passed on phones, where the file list is a drawer.
+// onOpenChat opens the chat drawer on phones, and shows or hides the chat panel on desktop.
+function EditorToolbar({ room, onOpenFiles, onOpenChat, chatOpen = false }) {
   const dispatch = useDispatch()
   const activeFile = useSelector(selectActiveFile)
   const language = useSelector(selectActiveLanguage)
@@ -116,8 +117,11 @@ function EditorToolbar({ room, onOpenFiles, onOpenChat }) {
         {onOpenChat && (
           <button
             onClick={onOpenChat}
-            className="ml-1 text-gray-300 hover:text-white"
-            aria-label="Open chat"
+            className={`ml-1 rounded-md p-1.5 hover:text-white ${
+              chatOpen ? 'bg-gray-800 text-white' : 'text-gray-300'
+            }`}
+            aria-label={chatOpen ? 'Hide chat' : 'Show chat'}
+            title={chatOpen ? 'Hide chat' : 'Show chat'}
           >
             <MessageSquare size={18} />
           </button>
