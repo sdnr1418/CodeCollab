@@ -85,3 +85,30 @@ export async function removeMember(roomId, memberId) {
   saveDb()
   return mockDelay(room)
 }
+
+export async function renameRoom(roomId, name) {
+  const room = findRoom(roomId)
+  room.name = name
+  room.updatedAt = new Date().toISOString()
+  saveDb()
+  return mockDelay(room)
+}
+
+// Only the owner can delete. Its files and chat messages go with it.
+export async function deleteRoom(roomId) {
+  findRoom(roomId)
+  db.rooms = db.rooms.filter((r) => r.id !== roomId)
+  db.files = db.files.filter((f) => f.roomId !== roomId)
+  db.messages = db.messages.filter((m) => m.roomId !== roomId)
+  saveDb()
+  return mockDelay(roomId)
+}
+
+export async function leaveRoom(roomId, user) {
+  const room = findRoom(roomId)
+  if (room.ownerId === user.id) throw new Error('The owner cannot leave. Delete the room instead.')
+  room.members = room.members.filter((m) => m.id !== user.id)
+  addSystemMessage(roomId, `${user.name} left the room`)
+  saveDb()
+  return mockDelay(roomId)
+}

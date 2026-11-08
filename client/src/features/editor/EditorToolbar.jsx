@@ -11,6 +11,7 @@ import {
   selectActiveFile,
   selectActiveLanguage,
 } from '../files/filesSlice'
+import RoomActions from '../rooms/RoomActions'
 import { runActiveFile } from './outputSlice'
 
 // onOpenFiles / onOpenChat are only passed on phones, where those panels are drawers
@@ -20,6 +21,7 @@ function EditorToolbar({ room, onOpenFiles, onOpenChat }) {
   const language = useSelector(selectActiveLanguage)
   const unsavedCount = useSelector((state) => state.files.unsavedIds.length)
   const running = useSelector((state) => state.output.status === 'running')
+  const userId = useSelector((state) => state.auth.user.id)
   const onlineMembers = room.members.filter((m) => m.online)
 
   const handleShare = async () => {
@@ -50,9 +52,12 @@ function EditorToolbar({ room, onOpenFiles, onOpenChat }) {
             <FolderTree size={18} />
           </button>
         )}
-        <div className="flex min-w-0 items-baseline gap-2">
-          <h1 className="truncate font-semibold">{room.name}</h1>
-          <span className="hidden font-mono text-xs text-gray-500 md:inline">{room.id}</span>
+        <div className="flex min-w-0 items-center gap-1">
+          <div className="flex min-w-0 items-baseline gap-2">
+            <h1 className="truncate font-semibold">{room.name}</h1>
+            <span className="hidden font-mono text-xs text-gray-500 md:inline">{room.id}</span>
+          </div>
+          <RoomActions room={room} isOwner={room.ownerId === userId} afterRemove="/dashboard" />
         </div>
         <label className="relative hidden items-center md:flex">
           <Code2 size={14} className="pointer-events-none absolute left-2.5 text-gray-400" />
