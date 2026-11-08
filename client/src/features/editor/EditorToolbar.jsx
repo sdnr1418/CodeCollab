@@ -90,12 +90,19 @@ function EditorToolbar({ room, onOpenFiles, onOpenChat }) {
             <UserPlus size={14} /> Share / Invite
           </Button>
         </div>
-        <Button variant="secondary" size="sm" onClick={handleSave} disabled={unsavedCount === 0}>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleSave}
+          disabled={unsavedCount === 0}
+          title="Save all files (Ctrl+S)"
+        >
           <Save size={14} /> <span className="hidden sm:inline">Save</span>
         </Button>
         <Button
           size="sm"
           onClick={() => dispatch(runActiveFile())}
+          title="Run (Ctrl+Enter)"
           loading={running}
           disabled={!activeFile}
         >
