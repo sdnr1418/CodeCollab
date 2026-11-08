@@ -1,21 +1,7 @@
 // Phase 1: local mock database. Phase 2: replace each body with a call to the Express API.
 import { db, saveDb } from '../utils/mockDb'
 import { mockDelay } from '../utils/mockDelay'
-
-const STARTER_FILES = {
-  cpp: {
-    name: 'main.cpp',
-    content:
-      '#include <iostream>\nusing namespace std;\n\nint main() {\n  cout << "Hello, team!" << endl;\n  return 0;\n}\n',
-  },
-  java: {
-    name: 'Main.java',
-    content:
-      'public class Main {\n  public static void main(String[] args) {\n    System.out.println("Hello, team!");\n  }\n}\n',
-  },
-  python: { name: 'main.py', content: 'print("Hello, team!")\n' },
-  javascript: { name: 'index.js', content: "console.log('Hello, team!')\n" },
-}
+import { STARTER_FILES } from '../utils/starterFiles'
 
 const asMember = (user, role) => ({
   id: user.id,

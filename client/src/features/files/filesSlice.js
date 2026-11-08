@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import * as fileService from '../../services/fileService'
 import { languageFromFileName } from '../../utils/languages'
+import { planLanguageChange } from '../../utils/starterFiles'
 
 export const fetchFiles = createAsyncThunk('files/fetch', (roomId) =>
   fileService.getFilesForRoom(roomId),
@@ -24,6 +25,19 @@ export const saveFiles = createAsyncThunk('files/save', (roomId, { getState }) =
     .map((f) => ({ id: f.id, content: f.content }))
   return fileService.saveFiles(roomId, changes)
 })
+
+// The language dropdown. For code files it also renames the file (main.cpp -> main.py)
+// and swaps untouched starter code. For other files (README.md) it only changes the colours.
+export const changeFileLanguage = createAsyncThunk(
+  'files/changeLanguage',
+  async ({ id, language }, { getState }) => {
+    const file = getState().files.items.find((f) => f.id === id)
+    const plan = planLanguageChange(file, language)
+    if (!plan) return { id, language } // colours only
+    const saved = await fileService.changeFileLanguage(id, plan)
+    return { id, name: saved.name, content: plan.content }
+  },
+)
 
 const initialState = {
   items: [], // { id, roomId, name, content }
@@ -61,10 +75,6 @@ const filesSlice = createSlice({
       file.content = content
       if (!state.unsavedIds.includes(id)) state.unsavedIds.push(id)
     },
-    fileLanguageChanged(state, action) {
-      const file = state.items.find((f) => f.id === action.payload.id)
-      if (file) file.language = action.payload.language
-    },
   },
   extraReducers: (builder) => {
     builder
@@ -84,6 +94,21 @@ const filesSlice = createSlice({
         const file = state.items.find((f) => f.id === action.payload.id)
         if (file) file.name = action.payload.name
       })
+      .addCase(changeFileLanguage.fulfilled, (state, action) => {
+        const { id, language, name, content } = action.payload
+        const file = state.items.find((f) => f.id === id)
+        if (!file) return
+        if (language) {
+          file.language = language // manual choice, used instead of the extension
+          return
+        }
+        file.name = name
+        delete file.language // the new extension now decides the language
+        if (content !== undefined) {
+          file.content = content
+          state.unsavedIds = state.unsavedIds.filter((x) => x !== id) // already saved by the service
+        }
+      })
       .addCase(deleteFile.fulfilled, (state, action) => {
         const id = action.payload
         state.items = state.items.filter((f) => f.id !== id)
@@ -96,8 +121,7 @@ const filesSlice = createSlice({
   },
 })
 
-export const { fileSelected, tabClosed, fileContentChanged, fileLanguageChanged } =
-  filesSlice.actions
+export const { fileSelected, tabClosed, fileContentChanged } = filesSlice.actions
 
 export const selectActiveFile = (state) =>
   state.files.items.find((f) => f.id === state.files.activeFileId)

@@ -6,7 +6,7 @@ import Button from '../../components/ui/Button'
 import AvatarGroup from '../../components/ui/AvatarGroup'
 import { LANGUAGES } from '../../utils/languages'
 import {
-  fileLanguageChanged,
+  changeFileLanguage,
   saveFiles,
   selectActiveFile,
   selectActiveLanguage,
@@ -32,6 +32,14 @@ function EditorToolbar({ room, onOpenFiles, onOpenChat, chatOpen = false }) {
     } catch {
       // Some browsers block the clipboard, so just show the ID instead
       toast(`Room ID: ${room.id}. Send it to a teammate.`, { duration: 6000 })
+    }
+  }
+
+  const handleLanguage = async (value) => {
+    try {
+      await dispatch(changeFileLanguage({ id: activeFile.id, language: value })).unwrap()
+    } catch (err) {
+      toast.error(err.message) // e.g. "A file named main.py already exists"
     }
   }
 
@@ -70,9 +78,7 @@ function EditorToolbar({ room, onOpenFiles, onOpenChat, chatOpen = false }) {
           <select
             value={language ?? ''}
             disabled={!activeFile}
-            onChange={(e) =>
-              dispatch(fileLanguageChanged({ id: activeFile.id, language: e.target.value }))
-            }
+            onChange={(e) => handleLanguage(e.target.value)}
             className="h-8 rounded-md border border-gray-700 bg-gray-800 pr-3 pl-8 text-xs font-medium focus:border-indigo-500 focus:outline-none"
           >
             {!LANGUAGES.some((l) => l.value === language) && (
