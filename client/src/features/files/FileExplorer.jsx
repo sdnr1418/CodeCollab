@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { FileText, Pencil, Plus, Trash2 } from 'lucide-react'
-import { fileCreated, fileDeleted, fileRenamed, fileSelected } from './filesSlice'
+import toast from 'react-hot-toast'
+import { createFile, deleteFile, fileSelected, renameFile } from './filesSlice'
 
 // Small inline text box used for both "new file" and "rename"
 function FileNameInput({ initial = '', onDone }) {
@@ -31,18 +32,24 @@ function FileExplorer({ roomId, onSelect }) {
   const [creating, setCreating] = useState(false)
   const [renamingId, setRenamingId] = useState(null)
 
+  // .unwrap() turns a failed thunk into a thrown error, e.g. "A file named x already exists"
+  const run = (thunk) =>
+    dispatch(thunk)
+      .unwrap()
+      .catch((err) => toast.error(err.message))
+
   const handleCreate = (name) => {
     setCreating(false)
-    if (name) dispatch(fileCreated({ roomId, name }))
+    if (name) run(createFile({ roomId, name }))
   }
 
   const handleRename = (id, name) => {
     setRenamingId(null)
-    if (name) dispatch(fileRenamed({ id, name }))
+    if (name) run(renameFile({ id, name }))
   }
 
   const handleDelete = (file) => {
-    if (window.confirm(`Delete ${file.name}? This can't be undone.`)) dispatch(fileDeleted(file.id))
+    if (window.confirm(`Delete ${file.name}? This can't be undone.`)) run(deleteFile(file.id))
   }
 
   return (

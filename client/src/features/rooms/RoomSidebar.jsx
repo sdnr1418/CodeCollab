@@ -22,9 +22,11 @@ function RoomSidebar({ room }) {
       <div className="flex h-10 shrink-0 gap-5 border-b border-gray-800 px-4">
         <button className={tabClass('chat')} onClick={() => setTab('chat')}>
           Chat
-          <span className="rounded-full bg-indigo-600 px-1.5 text-xs text-white">
-            {messageCount}
-          </span>
+          {messageCount > 0 && (
+            <span className="rounded-full bg-indigo-600 px-1.5 text-xs text-white">
+              {messageCount}
+            </span>
+          )}
         </button>
         <button className={tabClass('members')} onClick={() => setTab('members')}>
           Members <span className="text-xs text-gray-500">{room.members.length}</span>

@@ -15,15 +15,32 @@ export const joinRoom = createAsyncThunk('rooms/join', (roomId, { getState }) =>
   roomService.joinRoom(roomId, getState().auth.user),
 )
 
+export const removeMember = createAsyncThunk('rooms/removeMember', ({ roomId, memberId }) =>
+  roomService.removeMember(roomId, memberId),
+)
+
+export const renameRoom = createAsyncThunk('rooms/rename', ({ roomId, name }) =>
+  roomService.renameRoom(roomId, name),
+)
+
+export const deleteRoom = createAsyncThunk('rooms/delete', (roomId) =>
+  roomService.deleteRoom(roomId),
+)
+
+export const leaveRoom = createAsyncThunk('rooms/leave', (roomId, { getState }) =>
+  roomService.leaveRoom(roomId, getState().auth.user),
+)
+
+// Both delete and leave return the room ID, so they share one reducer
+const dropRoom = (state, action) => {
+  state.items = state.items.filter((r) => r.id !== action.payload)
+  if (state.current?.id === action.payload) state.current = null
+}
+
 const roomsSlice = createSlice({
   name: 'rooms',
   initialState: { items: [], status: 'idle', current: null, currentStatus: 'idle' },
-  reducers: {
-    // Phase 1 only changes local state. Phase 2 will call the API first.
-    memberRemoved(state, action) {
-      state.current.members = state.current.members.filter((m) => m.id !== action.payload)
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(fetchRooms.pending, (state) => {
@@ -47,11 +64,20 @@ const roomsSlice = createSlice({
       .addCase(createRoom.fulfilled, (state, action) => {
         state.items.unshift(action.payload)
       })
+      .addCase(removeMember.fulfilled, (state, action) => {
+        state.current = action.payload
+      })
       .addCase(joinRoom.fulfilled, (state, action) => {
         state.items.unshift(action.payload)
       })
+      .addCase(renameRoom.fulfilled, (state, action) => {
+        const index = state.items.findIndex((r) => r.id === action.payload.id)
+        if (index !== -1) state.items[index] = action.payload
+        if (state.current?.id === action.payload.id) state.current = action.payload
+      })
+      .addCase(deleteRoom.fulfilled, dropRoom)
+      .addCase(leaveRoom.fulfilled, dropRoom)
   },
 })
 
-export const { memberRemoved } = roomsSlice.actions
 export default roomsSlice.reducer

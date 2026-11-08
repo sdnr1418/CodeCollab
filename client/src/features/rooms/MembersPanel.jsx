@@ -4,7 +4,8 @@ import toast from 'react-hot-toast'
 import Avatar from '../../components/ui/Avatar'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
-import { memberRemoved } from './roomsSlice'
+import { removeMember } from './roomsSlice'
+import { fetchMessages } from '../chat/chatSlice'
 
 function MembersPanel({ room }) {
   const user = useSelector((state) => state.auth.user)
@@ -21,11 +22,11 @@ function MembersPanel({ room }) {
     toast.success(`Room ID ${room.id} copied`)
   }
 
-  const handleRemove = (member) => {
-    if (window.confirm(`Remove ${member.name} from this room?`)) {
-      dispatch(memberRemoved(member.id))
-      toast.success(`${member.name} removed`)
-    }
+  const handleRemove = async (member) => {
+    if (!window.confirm(`Remove ${member.name} from this room?`)) return
+    await dispatch(removeMember({ roomId: room.id, memberId: member.id })).unwrap()
+    dispatch(fetchMessages(room.id)) // shows the "was removed" note in chat
+    toast.success(`${member.name} removed`)
   }
 
   return (

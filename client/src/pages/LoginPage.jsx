@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
 import MainLayout from '../components/layout/MainLayout'
 import LoginForm from '../features/auth/LoginForm'
+import usePageTitle from '../hooks/usePageTitle'
 
 function LoginPage() {
+  usePageTitle('Log in')
   return (
     <MainLayout>
       <div className="mx-auto mt-20 w-full max-w-sm px-4">

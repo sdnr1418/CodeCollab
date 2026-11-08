@@ -7,14 +7,17 @@ import EditorToolbar from '../features/editor/EditorToolbar'
 import FileExplorer from '../features/files/FileExplorer'
 import FileTabs from '../features/files/FileTabs'
 import CodeEditor from '../features/editor/CodeEditor'
+import EditorSettings from '../features/editor/EditorSettings'
 import OutputPanel from '../features/editor/OutputPanel'
 import RoomSidebar from '../features/rooms/RoomSidebar'
 import Drawer from '../components/ui/Drawer'
 import useMediaQuery from '../hooks/useMediaQuery'
+import useRoomShortcuts from '../hooks/useRoomShortcuts'
 import { fetchRoom } from '../features/rooms/roomsSlice'
 import { fetchFiles } from '../features/files/filesSlice'
 import { fetchMessages } from '../features/chat/chatSlice'
 import { outputCleared } from '../features/editor/outputSlice'
+import usePageTitle from '../hooks/usePageTitle'
 
 // Thin drag handles between panels
 const vHandle = 'w-px bg-gray-800 hover:bg-indigo-500'
@@ -27,6 +30,18 @@ function RoomPage() {
   const isMobile = useMediaQuery('(max-width: 767px)') // below Tailwind's md breakpoint
   const [drawer, setDrawer] = useState(null) // 'files' | 'chat' | null
   const closeDrawer = () => setDrawer(null)
+  const hasUnsaved = useSelector((state) => state.files.unsavedIds.length > 0)
+
+  // Warn before closing or refreshing the tab with unsaved edits
+  useEffect(() => {
+    if (!hasUnsaved) return
+    const warn = (e) => e.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [hasUnsaved])
+
+  useRoomShortcuts(roomId)
+  usePageTitle(room?.name)
 
   useEffect(() => {
     dispatch(fetchRoom(roomId))
@@ -56,7 +71,12 @@ function RoomPage() {
 
   const editor = (
     <div className="flex h-full flex-col">
-      <FileTabs />
+      <div className="flex">
+        <div className="min-w-0 flex-1">
+          <FileTabs />
+        </div>
+        <EditorSettings />
+      </div>
       <div className="min-h-0 flex-1">
         <CodeEditor />
       </div>

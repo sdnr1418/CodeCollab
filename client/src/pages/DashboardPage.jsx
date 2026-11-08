@@ -7,8 +7,11 @@ import RoomCard, { RoomCardSkeleton } from '../features/rooms/RoomCard'
 import CreateRoomModal from '../features/rooms/CreateRoomModal'
 import JoinRoomModal from '../features/rooms/JoinRoomModal'
 import { fetchRooms } from '../features/rooms/roomsSlice'
+import { resetDb } from '../utils/mockDb'
+import usePageTitle from '../hooks/usePageTitle'
 
 function RoomSection({ title, rooms, userId, loading }) {
+  usePageTitle('Dashboard')
   return (
     <section className="mb-10">
       <h2 className="mb-3 text-sm font-semibold">
@@ -78,6 +81,18 @@ function DashboardPage() {
             <RoomSection title="Joined" rooms={joined} userId={user.id} loading={loading} />
           </>
         )}
+
+        <p className="mt-4 text-center text-xs text-gray-600">
+          Demo data is saved in this browser.{' '}
+          <button
+            onClick={() =>
+              window.confirm('Reset all rooms, files and chats to the sample data?') && resetDb()
+            }
+            className="underline hover:text-gray-400"
+          >
+            Reset demo data
+          </button>
+        </p>
       </div>
 
       <CreateRoomModal open={modal === 'create'} onClose={closeModal} />

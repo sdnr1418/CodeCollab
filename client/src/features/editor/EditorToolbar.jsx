@@ -6,11 +6,12 @@ import Button from '../../components/ui/Button'
 import AvatarGroup from '../../components/ui/AvatarGroup'
 import { LANGUAGES } from '../../utils/languages'
 import {
-  allFilesSaved,
   fileLanguageChanged,
+  saveFiles,
   selectActiveFile,
   selectActiveLanguage,
 } from '../files/filesSlice'
+import RoomActions from '../rooms/RoomActions'
 import { runActiveFile } from './outputSlice'
 
 // onOpenFiles / onOpenChat are only passed on phones, where those panels are drawers
@@ -20,15 +21,21 @@ function EditorToolbar({ room, onOpenFiles, onOpenChat }) {
   const language = useSelector(selectActiveLanguage)
   const unsavedCount = useSelector((state) => state.files.unsavedIds.length)
   const running = useSelector((state) => state.output.status === 'running')
+  const userId = useSelector((state) => state.auth.user.id)
   const onlineMembers = room.members.filter((m) => m.online)
 
   const handleShare = async () => {
-    await navigator.clipboard?.writeText(room.id)
-    toast.success(`Room ID ${room.id} copied. Send it to a teammate.`)
+    try {
+      await navigator.clipboard.writeText(room.id)
+      toast.success(`Room ID ${room.id} copied. Send it to a teammate.`)
+    } catch {
+      // Some browsers block the clipboard, so just show the ID instead
+      toast(`Room ID: ${room.id}. Send it to a teammate.`, { duration: 6000 })
+    }
   }
 
-  const handleSave = () => {
-    dispatch(allFilesSaved())
+  const handleSave = async () => {
+    await dispatch(saveFiles(room.id)).unwrap()
     toast.success('All files saved')
   }
 
@@ -50,9 +57,12 @@ function EditorToolbar({ room, onOpenFiles, onOpenChat }) {
             <FolderTree size={18} />
           </button>
         )}
-        <div className="flex min-w-0 items-baseline gap-2">
-          <h1 className="truncate font-semibold">{room.name}</h1>
-          <span className="hidden font-mono text-xs text-gray-500 md:inline">{room.id}</span>
+        <div className="flex min-w-0 items-center gap-1">
+          <div className="flex min-w-0 items-baseline gap-2">
+            <h1 className="truncate font-semibold">{room.name}</h1>
+            <span className="hidden font-mono text-xs text-gray-500 md:inline">{room.id}</span>
+          </div>
+          <RoomActions room={room} isOwner={room.ownerId === userId} afterRemove="/dashboard" />
         </div>
         <label className="relative hidden items-center md:flex">
           <Code2 size={14} className="pointer-events-none absolute left-2.5 text-gray-400" />
@@ -85,12 +95,19 @@ function EditorToolbar({ room, onOpenFiles, onOpenChat }) {
             <UserPlus size={14} /> Share / Invite
           </Button>
         </div>
-        <Button variant="secondary" size="sm" onClick={handleSave} disabled={unsavedCount === 0}>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleSave}
+          disabled={unsavedCount === 0}
+          title="Save all files (Ctrl+S)"
+        >
           <Save size={14} /> <span className="hidden sm:inline">Save</span>
         </Button>
         <Button
           size="sm"
           onClick={() => dispatch(runActiveFile())}
+          title="Run (Ctrl+Enter)"
           loading={running}
           disabled={!activeFile}
         >

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { MessageSquare, SendHorizontal } from 'lucide-react'
 import ChatMessage from './ChatMessage'
-import { messageSent } from './chatSlice'
+import { sendMessage } from './chatSlice'
 
 function ChatPanel({ roomId }) {
   const messages = useSelector((state) => state.chat.messages)
@@ -19,7 +19,7 @@ function ChatPanel({ roomId }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!text.trim()) return
-    dispatch(messageSent({ roomId, user, text: text.trim() }))
+    dispatch(sendMessage({ roomId, user, text: text.trim() }))
     setText('')
   }
 
