@@ -34,6 +34,17 @@ export async function renameFile(id, name) {
   return mockDelay(file, 100)
 }
 
+// Used by the language dropdown: renames a file and, if given, replaces its content
+export async function changeFileLanguage(id, { name, content }) {
+  const file = db.files.find((f) => f.id === id)
+  assertNameFree(file.roomId, name, id)
+  file.name = name
+  if (content !== undefined) file.content = content
+  touchRoom(file.roomId)
+  saveDb()
+  return mockDelay(file, 100)
+}
+
 export async function deleteFile(id) {
   const file = db.files.find((f) => f.id === id)
   db.files = db.files.filter((f) => f.id !== id)
