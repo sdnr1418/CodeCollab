@@ -5,6 +5,10 @@ export const loginUser = createAsyncThunk('auth/login', ({ email, password }) =>
   authService.login(email, password),
 )
 
+export const registerUser = createAsyncThunk('auth/register', ({ name, email, password }) =>
+  authService.register(name, email, password),
+)
+
 const authSlice = createSlice({
   name: 'auth',
   initialState: { user: null, token: null, status: 'idle', error: null },
@@ -22,6 +26,10 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.status = 'idle'
+        state.user = action.payload.user
+        state.token = action.payload.token
+      })
+      .addCase(registerUser.fulfilled, (state, action) => {
         state.user = action.payload.user
         state.token = action.payload.token
       })
