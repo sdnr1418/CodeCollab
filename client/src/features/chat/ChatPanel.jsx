@@ -42,7 +42,7 @@ function ChatPanel({ roomId }) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Message the room"
-          className="h-9 flex-1 rounded-md border border-gray-700 bg-gray-800 px-3 text-sm placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none"
+          className="h-9 min-w-0 flex-1 rounded-md border border-gray-700 bg-gray-800 px-3 text-sm placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none"
         />
         <button
           type="submit"

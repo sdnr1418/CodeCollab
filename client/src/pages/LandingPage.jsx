@@ -114,7 +114,7 @@ function LandingPage() {
       </section>
 
       <footer className="border-t border-gray-800 py-6 text-center text-xs text-gray-600">
-        CodeCollab · Web Programming project, FAST-NUCES Lahore
+        CodeCollab
       </footer>
     </MainLayout>
   )

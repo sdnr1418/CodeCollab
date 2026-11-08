@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { FolderPlus, LogIn, Plus } from 'lucide-react'
 import MainLayout from '../components/layout/MainLayout'
 import Button from '../components/ui/Button'
@@ -11,7 +12,6 @@ import { resetDb } from '../utils/mockDb'
 import usePageTitle from '../hooks/usePageTitle'
 
 function RoomSection({ title, rooms, userId, loading }) {
-  usePageTitle('Dashboard')
   return (
     <section className="mb-10">
       <h2 className="mb-3 text-sm font-semibold">
@@ -30,10 +30,20 @@ function RoomSection({ title, rooms, userId, loading }) {
 }
 
 function DashboardPage() {
+  usePageTitle('Dashboard')
   const user = useSelector((state) => state.auth.user)
   const { items, status } = useSelector((state) => state.rooms)
   const dispatch = useDispatch()
-  const [modal, setModal] = useState(null) // 'create' | 'join' | null
+  const location = useLocation()
+  // "Log in and join a room" on the login page sends openJoin, which opens the Join pop-up
+  const [modal, setModal] = useState(location.state?.openJoin ? 'join' : null) // 'create' | 'join' | null
+
+  const navigate = useNavigate()
+
+  // Clear openJoin once used, so refreshing the dashboard doesn't open the pop-up again
+  useEffect(() => {
+    if (location.state?.openJoin) navigate('.', { replace: true, state: null })
+  }, [location.state, navigate])
 
   useEffect(() => {
     dispatch(fetchRooms(user.id))

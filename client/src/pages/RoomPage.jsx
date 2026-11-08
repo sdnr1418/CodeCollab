@@ -13,11 +13,11 @@ import RoomSidebar from '../features/rooms/RoomSidebar'
 import Drawer from '../components/ui/Drawer'
 import useMediaQuery from '../hooks/useMediaQuery'
 import useRoomShortcuts from '../hooks/useRoomShortcuts'
+import usePageTitle from '../hooks/usePageTitle'
 import { fetchRoom } from '../features/rooms/roomsSlice'
 import { fetchFiles } from '../features/files/filesSlice'
 import { fetchMessages } from '../features/chat/chatSlice'
 import { outputCleared } from '../features/editor/outputSlice'
-import usePageTitle from '../hooks/usePageTitle'
 
 // Thin drag handles between panels
 const vHandle = 'w-px bg-gray-800 hover:bg-indigo-500'
@@ -29,6 +29,7 @@ function RoomPage() {
   const { current: room, currentStatus } = useSelector((state) => state.rooms)
   const isMobile = useMediaQuery('(max-width: 767px)') // below Tailwind's md breakpoint
   const [drawer, setDrawer] = useState(null) // 'files' | 'chat' | null
+  const [chatOpen, setChatOpen] = useState(true) // desktop only: show or hide the right panel
   const closeDrawer = () => setDrawer(null)
   const hasUnsaved = useSelector((state) => state.files.unsavedIds.length > 0)
 
@@ -113,13 +114,18 @@ function RoomPage() {
 
   return (
     <div className="flex h-full flex-col bg-gray-950">
-      <EditorToolbar room={room} />
+      <EditorToolbar
+        room={room}
+        chatOpen={chatOpen}
+        onOpenChat={() => setChatOpen((open) => !open)}
+      />
+      {/* The ids let the panel library keep the sizes right when the chat panel is added or removed */}
       <Group orientation="horizontal" className="min-h-0 flex-1">
-        <Panel defaultSize="16%" minSize="10%">
+        <Panel id="files" defaultSize="16%" minSize="10%">
           <FileExplorer roomId={room.id} />
         </Panel>
         <Separator className={vHandle} />
-        <Panel defaultSize="58%" minSize="30%">
+        <Panel id="editor" defaultSize="58%" minSize="30%">
           <Group orientation="vertical">
             <Panel defaultSize="68%" minSize="20%">
               {editor}
@@ -130,10 +136,14 @@ function RoomPage() {
             </Panel>
           </Group>
         </Panel>
-        <Separator className={vHandle} />
-        <Panel defaultSize="26%" minSize="18%">
-          <RoomSidebar room={room} />
-        </Panel>
+        {chatOpen && (
+          <>
+            <Separator className={vHandle} />
+            <Panel id="chat" defaultSize="26%" minSize="18%">
+              <RoomSidebar room={room} onClose={() => setChatOpen(false)} />
+            </Panel>
+          </>
+        )}
       </Group>
     </div>
   )
