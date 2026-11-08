@@ -2,8 +2,10 @@ import { useSelector } from 'react-redux'
 import { Link, useLocation } from 'react-router-dom'
 import { ArrowLeft, FileQuestion } from 'lucide-react'
 import MainLayout from '../components/layout/MainLayout'
+import usePageTitle from '../hooks/usePageTitle'
 
 function NotFoundPage() {
+  usePageTitle('Page not found')
   const user = useSelector((state) => state.auth.user)
   const { pathname } = useLocation()
 

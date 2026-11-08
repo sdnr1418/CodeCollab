@@ -2,6 +2,7 @@ import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { MessageSquare, Play, Users, Zap } from 'lucide-react'
 import MainLayout from '../components/layout/MainLayout'
+import usePageTitle from '../hooks/usePageTitle'
 
 const FEATURES = [
   {
@@ -55,6 +56,7 @@ function EditorPreview() {
 }
 
 function LandingPage() {
+  usePageTitle()
   const user = useSelector((state) => state.auth.user)
 
   return (

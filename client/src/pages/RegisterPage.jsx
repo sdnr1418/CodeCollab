@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
 import MainLayout from '../components/layout/MainLayout'
 import RegisterForm from '../features/auth/RegisterForm'
+import usePageTitle from '../hooks/usePageTitle'
 
 function RegisterPage() {
+  usePageTitle('Create account')
   return (
     <MainLayout>
       <div className="mx-auto my-12 w-full max-w-sm px-4 sm:my-20">

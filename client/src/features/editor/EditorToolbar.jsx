@@ -25,8 +25,13 @@ function EditorToolbar({ room, onOpenFiles, onOpenChat }) {
   const onlineMembers = room.members.filter((m) => m.online)
 
   const handleShare = async () => {
-    await navigator.clipboard?.writeText(room.id)
-    toast.success(`Room ID ${room.id} copied. Send it to a teammate.`)
+    try {
+      await navigator.clipboard.writeText(room.id)
+      toast.success(`Room ID ${room.id} copied. Send it to a teammate.`)
+    } catch {
+      // Some browsers block the clipboard, so just show the ID instead
+      toast(`Room ID: ${room.id}. Send it to a teammate.`, { duration: 6000 })
+    }
   }
 
   const handleSave = async () => {
