@@ -19,6 +19,24 @@ export const removeMember = createAsyncThunk('rooms/removeMember', ({ roomId, me
   roomService.removeMember(roomId, memberId),
 )
 
+export const renameRoom = createAsyncThunk('rooms/rename', ({ roomId, name }) =>
+  roomService.renameRoom(roomId, name),
+)
+
+export const deleteRoom = createAsyncThunk('rooms/delete', (roomId) =>
+  roomService.deleteRoom(roomId),
+)
+
+export const leaveRoom = createAsyncThunk('rooms/leave', (roomId, { getState }) =>
+  roomService.leaveRoom(roomId, getState().auth.user),
+)
+
+// Both delete and leave return the room ID, so they share one reducer
+const dropRoom = (state, action) => {
+  state.items = state.items.filter((r) => r.id !== action.payload)
+  if (state.current?.id === action.payload) state.current = null
+}
+
 const roomsSlice = createSlice({
   name: 'rooms',
   initialState: { items: [], status: 'idle', current: null, currentStatus: 'idle' },
@@ -52,6 +70,13 @@ const roomsSlice = createSlice({
       .addCase(joinRoom.fulfilled, (state, action) => {
         state.items.unshift(action.payload)
       })
+      .addCase(renameRoom.fulfilled, (state, action) => {
+        const index = state.items.findIndex((r) => r.id === action.payload.id)
+        if (index !== -1) state.items[index] = action.payload
+        if (state.current?.id === action.payload.id) state.current = action.payload
+      })
+      .addCase(deleteRoom.fulfilled, dropRoom)
+      .addCase(leaveRoom.fulfilled, dropRoom)
   },
 })
 
