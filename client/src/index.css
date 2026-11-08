@@ -15,3 +15,13 @@ body,
 body {
   @apply bg-gray-950 font-sans text-gray-100 antialiased;
 }
+
+/* Dark scrollbars and form controls */
+:root {
+  color-scheme: dark;
+}
+
+/* A visible indigo ring when you move around with the keyboard (Tab), but not on mouse clicks */
+:focus-visible {
+  @apply rounded-sm outline-2 outline-offset-2 outline-indigo-500;
+}

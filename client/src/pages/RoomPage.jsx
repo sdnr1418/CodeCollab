@@ -17,6 +17,7 @@ import { fetchRoom } from '../features/rooms/roomsSlice'
 import { fetchFiles } from '../features/files/filesSlice'
 import { fetchMessages } from '../features/chat/chatSlice'
 import { outputCleared } from '../features/editor/outputSlice'
+import usePageTitle from '../hooks/usePageTitle'
 
 // Thin drag handles between panels
 const vHandle = 'w-px bg-gray-800 hover:bg-indigo-500'
@@ -40,6 +41,7 @@ function RoomPage() {
   }, [hasUnsaved])
 
   useRoomShortcuts(roomId)
+  usePageTitle(room?.name)
 
   useEffect(() => {
     dispatch(fetchRoom(roomId))

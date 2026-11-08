@@ -8,8 +8,10 @@ import CreateRoomModal from '../features/rooms/CreateRoomModal'
 import JoinRoomModal from '../features/rooms/JoinRoomModal'
 import { fetchRooms } from '../features/rooms/roomsSlice'
 import { resetDb } from '../utils/mockDb'
+import usePageTitle from '../hooks/usePageTitle'
 
 function RoomSection({ title, rooms, userId, loading }) {
+  usePageTitle('Dashboard')
   return (
     <section className="mb-10">
       <h2 className="mb-3 text-sm font-semibold">
