@@ -15,15 +15,14 @@ export const joinRoom = createAsyncThunk('rooms/join', (roomId, { getState }) =>
   roomService.joinRoom(roomId, getState().auth.user),
 )
 
+export const removeMember = createAsyncThunk('rooms/removeMember', ({ roomId, memberId }) =>
+  roomService.removeMember(roomId, memberId),
+)
+
 const roomsSlice = createSlice({
   name: 'rooms',
   initialState: { items: [], status: 'idle', current: null, currentStatus: 'idle' },
-  reducers: {
-    // Phase 1 only changes local state. Phase 2 will call the API first.
-    memberRemoved(state, action) {
-      state.current.members = state.current.members.filter((m) => m.id !== action.payload)
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(fetchRooms.pending, (state) => {
@@ -47,11 +46,13 @@ const roomsSlice = createSlice({
       .addCase(createRoom.fulfilled, (state, action) => {
         state.items.unshift(action.payload)
       })
+      .addCase(removeMember.fulfilled, (state, action) => {
+        state.current = action.payload
+      })
       .addCase(joinRoom.fulfilled, (state, action) => {
         state.items.unshift(action.payload)
       })
   },
 })
 
-export const { memberRemoved } = roomsSlice.actions
 export default roomsSlice.reducer

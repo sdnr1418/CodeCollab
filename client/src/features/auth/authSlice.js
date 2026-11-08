@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import * as authService from '../../services/authService'
+import { loadAuth } from '../../utils/authStorage'
 
 export const loginUser = createAsyncThunk('auth/login', ({ email, password }) =>
   authService.login(email, password),
@@ -11,7 +12,8 @@ export const registerUser = createAsyncThunk('auth/register', ({ name, email, pa
 
 const authSlice = createSlice({
   name: 'auth',
-  initialState: { user: null, token: null, status: 'idle', error: null },
+  // Start logged in if a previous session was saved in localStorage
+  initialState: { user: null, token: null, ...loadAuth(), status: 'idle', error: null },
   reducers: {
     logout(state) {
       state.user = null

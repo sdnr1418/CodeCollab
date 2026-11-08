@@ -6,12 +6,39 @@ export const fetchFiles = createAsyncThunk('files/fetch', (roomId) =>
   fileService.getFilesForRoom(roomId),
 )
 
+export const createFile = createAsyncThunk('files/create', ({ roomId, name }) =>
+  fileService.createFile(roomId, name),
+)
+
+export const renameFile = createAsyncThunk('files/rename', ({ id, name }) =>
+  fileService.renameFile(id, name),
+)
+
+export const deleteFile = createAsyncThunk('files/delete', (id) => fileService.deleteFile(id))
+
+// Saves every file with unsaved edits in one go (the Save button / Ctrl+S)
+export const saveFiles = createAsyncThunk('files/save', (roomId, { getState }) => {
+  const { items, unsavedIds } = getState().files
+  const changes = items
+    .filter((f) => unsavedIds.includes(f.id))
+    .map((f) => ({ id: f.id, content: f.content }))
+  return fileService.saveFiles(roomId, changes)
+})
+
 const initialState = {
   items: [], // { id, roomId, name, content }
   openTabIds: [], // files shown as tabs above the editor
   activeFileId: null,
   unsavedIds: [], // files edited since the last Save
   status: 'idle',
+}
+
+const closeTab = (state, id) => {
+  const index = state.openTabIds.indexOf(id)
+  state.openTabIds = state.openTabIds.filter((tabId) => tabId !== id)
+  if (state.activeFileId === id) {
+    state.activeFileId = state.openTabIds[Math.max(0, index - 1)] ?? null
+  }
 }
 
 const filesSlice = createSlice({
@@ -24,13 +51,9 @@ const filesSlice = createSlice({
       if (!state.openTabIds.includes(id)) state.openTabIds.push(id)
     },
     tabClosed(state, action) {
-      const id = action.payload
-      const index = state.openTabIds.indexOf(id)
-      state.openTabIds = state.openTabIds.filter((tabId) => tabId !== id)
-      if (state.activeFileId === id) {
-        state.activeFileId = state.openTabIds[Math.max(0, index - 1)] ?? null
-      }
+      closeTab(state, action.payload)
     },
+    // Typing only changes Redux; the change is stored when the user saves
     fileContentChanged(state, action) {
       const { id, content } = action.payload
       const file = state.items.find((f) => f.id === id)
@@ -38,29 +61,9 @@ const filesSlice = createSlice({
       file.content = content
       if (!state.unsavedIds.includes(id)) state.unsavedIds.push(id)
     },
-    fileCreated(state, action) {
-      const { roomId, name } = action.payload
-      const file = { id: crypto.randomUUID(), roomId, name, content: '' }
-      state.items.push(file)
-      state.openTabIds.push(file.id)
-      state.activeFileId = file.id
-    },
-    fileRenamed(state, action) {
-      const file = state.items.find((f) => f.id === action.payload.id)
-      if (file) file.name = action.payload.name
-    },
-    fileDeleted(state, action) {
-      const id = action.payload
-      state.items = state.items.filter((f) => f.id !== id)
-      state.unsavedIds = state.unsavedIds.filter((x) => x !== id)
-      filesSlice.caseReducers.tabClosed(state, { payload: id })
-    },
     fileLanguageChanged(state, action) {
       const file = state.items.find((f) => f.id === action.payload.id)
       if (file) file.language = action.payload.language
-    },
-    allFilesSaved(state) {
-      state.unsavedIds = []
     },
   },
   extraReducers: (builder) => {
@@ -69,23 +72,32 @@ const filesSlice = createSlice({
       .addCase(fetchFiles.fulfilled, (state, action) => {
         state.status = 'idle'
         state.items = action.payload
-        const first = action.payload[0]
-        state.activeFileId = first?.id ?? null
+        state.activeFileId = action.payload[0]?.id ?? null
         state.openTabIds = action.payload.slice(0, 3).map((f) => f.id)
+      })
+      .addCase(createFile.fulfilled, (state, action) => {
+        state.items.push(action.payload)
+        state.openTabIds.push(action.payload.id)
+        state.activeFileId = action.payload.id
+      })
+      .addCase(renameFile.fulfilled, (state, action) => {
+        const file = state.items.find((f) => f.id === action.payload.id)
+        if (file) file.name = action.payload.name
+      })
+      .addCase(deleteFile.fulfilled, (state, action) => {
+        const id = action.payload
+        state.items = state.items.filter((f) => f.id !== id)
+        state.unsavedIds = state.unsavedIds.filter((x) => x !== id)
+        closeTab(state, id)
+      })
+      .addCase(saveFiles.fulfilled, (state, action) => {
+        state.unsavedIds = state.unsavedIds.filter((id) => !action.payload.includes(id))
       })
   },
 })
 
-export const {
-  fileSelected,
-  tabClosed,
-  fileContentChanged,
-  fileCreated,
-  fileRenamed,
-  fileDeleted,
-  fileLanguageChanged,
-  allFilesSaved,
-} = filesSlice.actions
+export const { fileSelected, tabClosed, fileContentChanged, fileLanguageChanged } =
+  filesSlice.actions
 
 export const selectActiveFile = (state) =>
   state.files.items.find((f) => f.id === state.files.activeFileId)

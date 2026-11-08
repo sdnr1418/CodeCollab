@@ -27,6 +27,15 @@ function RoomPage() {
   const isMobile = useMediaQuery('(max-width: 767px)') // below Tailwind's md breakpoint
   const [drawer, setDrawer] = useState(null) // 'files' | 'chat' | null
   const closeDrawer = () => setDrawer(null)
+  const hasUnsaved = useSelector((state) => state.files.unsavedIds.length > 0)
+
+  // Warn before closing or refreshing the tab with unsaved edits
+  useEffect(() => {
+    if (!hasUnsaved) return
+    const warn = (e) => e.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [hasUnsaved])
 
   useEffect(() => {
     dispatch(fetchRoom(roomId))

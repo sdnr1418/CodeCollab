@@ -6,8 +6,8 @@ import Button from '../../components/ui/Button'
 import AvatarGroup from '../../components/ui/AvatarGroup'
 import { LANGUAGES } from '../../utils/languages'
 import {
-  allFilesSaved,
   fileLanguageChanged,
+  saveFiles,
   selectActiveFile,
   selectActiveLanguage,
 } from '../files/filesSlice'
@@ -27,8 +27,8 @@ function EditorToolbar({ room, onOpenFiles, onOpenChat }) {
     toast.success(`Room ID ${room.id} copied. Send it to a teammate.`)
   }
 
-  const handleSave = () => {
-    dispatch(allFilesSaved())
+  const handleSave = async () => {
+    await dispatch(saveFiles(room.id)).unwrap()
     toast.success('All files saved')
   }
 
