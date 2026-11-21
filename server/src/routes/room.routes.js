@@ -19,6 +19,8 @@ import {
 import { validate } from '../middleware/validate.js'
 import { requireAuth } from '../middleware/requireAuth.js'
 import { requireRoomRole } from '../middleware/requireRoomRole.js'
+import fileRoutes from './file.routes.js'
+import messageRoutes from './message.routes.js'
 
 const router = Router()
 
@@ -38,5 +40,9 @@ router.delete(
   validate,
   removeMember,
 )
+
+// Nested resources: /api/rooms/:roomId/files and /api/rooms/:roomId/messages
+router.use('/:roomId/files', fileRoutes)
+router.use('/:roomId/messages', messageRoutes)
 
 export default router
