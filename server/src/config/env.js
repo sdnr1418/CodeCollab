@@ -4,7 +4,8 @@ import dotenv from "dotenv";
 
 dotenv.config({ quiet: true });
 
-const required = ["MONGODB_URI"];
+const required = ["MONGODB_URI", "JWT_SECRET"];
+
 const missing = required.filter((key) => !process.env[key]);
 if (missing.length > 0) {
   console.error(
