@@ -3,6 +3,10 @@
 import { Room } from '../models/Room.js'
 import { ApiError } from '../utils/ApiError.js'
 import { makeRoomCode } from '../utils/roomCode.js'
+import { File } from '../models/File.js'
+import { Message, addSystemMessage } from '../models/Message.js'
+import { User } from '../models/User.js'
+import { STARTER_FILES } from '../utils/starterFiles.js'
 
 const MEMBER_FIELDS = 'name color'
 const withMembers = (room) => room.populate('members.user', MEMBER_FIELDS)
@@ -30,7 +34,8 @@ export async function createRoom(req, res) {
     owner: req.user._id,
     members: [{ user: req.user._id, role: 'owner' }],
   })
-  // Step 21 also creates the starter file here (main.cpp, Main.java, ...)
+  // Every new room starts with one file: main.cpp, Main.java, main.py or index.js
+  await File.create({ room: room._id, ...STARTER_FILES[language], updatedBy: req.user._id })
 
   res.status(201).json({ room: await withMembers(room) })
 }
@@ -45,6 +50,7 @@ export async function joinRoom(req, res) {
 
   room.members.push({ user: req.user._id, role: 'member' })
   await room.save()
+  await addSystemMessage(room._id, `${req.user.name} joined the room`)
   res.json({ room: await withMembers(room) })
 }
 
@@ -62,8 +68,10 @@ export async function renameRoom(req, res) {
 
 // DELETE /api/rooms/:roomId  (owner only)
 export async function deleteRoom(req, res) {
+  // Delete the room's files and chat messages too, so nothing is left behind
+  await File.deleteMany({ room: req.room._id })
+  await Message.deleteMany({ room: req.room._id })
   await req.room.deleteOne()
-  // Step 21 also deletes the room's files and chat messages here
   res.json({ id: req.room.code })
 }
 
@@ -85,5 +93,10 @@ export async function removeMember(req, res) {
 
   room.members = room.members.filter((m) => !m.user.equals(targetId))
   await room.save()
+  const target = await User.findById(targetId)
+  await addSystemMessage(
+    room._id,
+    isSelf ? `${target.name} left the room` : `${target.name} was removed from the room`,
+  )
   res.json({ room: await withMembers(room) })
 }
