@@ -18,10 +18,15 @@ function RenameRoomModal({ room, open, onClose }) {
     if (!trimmed) return setError('Give your room a name')
     if (trimmed === room.name) return onClose()
     setLoading(true)
-    await dispatch(renameRoom({ roomId: room.id, name: trimmed })).unwrap()
-    setLoading(false)
-    toast.success('Room renamed')
-    onClose()
+    try {
+      await dispatch(renameRoom({ roomId: room.id, name: trimmed })).unwrap()
+      toast.success('Room renamed')
+      onClose()
+    } catch (err) {
+      setError(err.message) // e.g. "Only the room owner can do that"
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
