@@ -24,9 +24,13 @@ function MembersPanel({ room }) {
 
   const handleRemove = async (member) => {
     if (!window.confirm(`Remove ${member.name} from this room?`)) return
-    await dispatch(removeMember({ roomId: room.id, memberId: member.id })).unwrap()
-    dispatch(fetchMessages(room.id)) // shows the "was removed" note in chat
-    toast.success(`${member.name} removed`)
+    try {
+      await dispatch(removeMember({ roomId: room.id, memberId: member.id })).unwrap()
+      dispatch(fetchMessages(room.id)) // shows the "was removed" note in chat
+      toast.success(`${member.name} removed`)
+    } catch (err) {
+      toast.error(err.message)
+    }
   }
 
   return (

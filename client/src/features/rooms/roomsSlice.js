@@ -1,26 +1,30 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import * as roomService from '../../services/roomService'
 
-export const fetchRooms = createAsyncThunk('rooms/fetchAll', (userId) =>
-  roomService.getRoomsForUser(userId),
+// getState().auth.user = the logged-in user, passed so the service can mark them online
+const me = (getState) => getState().auth.user
+
+export const fetchRooms = createAsyncThunk('rooms/fetchAll', () => roomService.getRoomsForUser())
+
+export const fetchRoom = createAsyncThunk('rooms/fetchOne', (roomId, { getState }) =>
+  roomService.getRoom(roomId, me(getState)),
 )
 
-export const fetchRoom = createAsyncThunk('rooms/fetchOne', (roomId) => roomService.getRoom(roomId))
-
 export const createRoom = createAsyncThunk('rooms/create', ({ name, language }, { getState }) =>
-  roomService.createRoom(name, language, getState().auth.user),
+  roomService.createRoom(name, language, me(getState)),
 )
 
 export const joinRoom = createAsyncThunk('rooms/join', (roomId, { getState }) =>
-  roomService.joinRoom(roomId, getState().auth.user),
+  roomService.joinRoom(roomId, me(getState)),
 )
 
-export const removeMember = createAsyncThunk('rooms/removeMember', ({ roomId, memberId }) =>
-  roomService.removeMember(roomId, memberId),
+export const removeMember = createAsyncThunk(
+  'rooms/removeMember',
+  ({ roomId, memberId }, { getState }) => roomService.removeMember(roomId, memberId, me(getState)),
 )
 
-export const renameRoom = createAsyncThunk('rooms/rename', ({ roomId, name }) =>
-  roomService.renameRoom(roomId, name),
+export const renameRoom = createAsyncThunk('rooms/rename', ({ roomId, name }, { getState }) =>
+  roomService.renameRoom(roomId, name, me(getState)),
 )
 
 export const deleteRoom = createAsyncThunk('rooms/delete', (roomId) =>
@@ -28,7 +32,7 @@ export const deleteRoom = createAsyncThunk('rooms/delete', (roomId) =>
 )
 
 export const leaveRoom = createAsyncThunk('rooms/leave', (roomId, { getState }) =>
-  roomService.leaveRoom(roomId, getState().auth.user),
+  roomService.leaveRoom(roomId, me(getState)),
 )
 
 // Both delete and leave return the room ID, so they share one reducer

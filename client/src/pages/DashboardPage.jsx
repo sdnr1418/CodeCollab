@@ -46,7 +46,7 @@ function DashboardPage() {
   }, [location.state, navigate])
 
   useEffect(() => {
-    dispatch(fetchRooms(user.id))
+    dispatch(fetchRooms())
   }, [dispatch, user.id])
 
   const loading = status === 'loading'

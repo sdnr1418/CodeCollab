@@ -20,11 +20,16 @@ function CreateRoomModal({ open, onClose }) {
     e.preventDefault()
     if (!name.trim()) return setError('Give your room a name')
     setLoading(true)
-    const room = await dispatch(createRoom({ name: name.trim(), language })).unwrap()
-    setLoading(false)
-    toast.success('Room created')
-    onClose()
-    navigate(`/room/${room.id}`)
+    try {
+      const room = await dispatch(createRoom({ name: name.trim(), language })).unwrap()
+      toast.success('Room created')
+      onClose()
+      navigate(`/room/${room.id}`)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
