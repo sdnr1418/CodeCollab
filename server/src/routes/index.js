@@ -3,6 +3,7 @@
 import { Router } from 'express'
 import { isDbConnected } from '../config/db.js'
 import authRoutes from './auth.routes.js'
+import roomRoutes from './room.routes.js'
 
 const router = Router()
 
@@ -16,5 +17,6 @@ router.get('/health', (req, res) => {
 })
 
 router.use('/auth', authRoutes) // /api/auth/register, /login, /logout, /me
+router.use('/rooms', roomRoutes) // /api/rooms/...
 
 export default router
