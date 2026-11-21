@@ -4,7 +4,7 @@
   "description": "CodeCollab: real-time collaborative code editor (MERN)",
   "scripts": {
     "dev": "concurrently -n server,client -c blue,magenta \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
-    "install:all": "npm install && npm install --prefix server && npm install --prefix client"
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install"
   },
   "devDependencies": {
     "concurrently": "^10.0.7"
