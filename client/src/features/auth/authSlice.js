@@ -1,57 +1,69 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
-import * as authService from '../../services/authService'
-import { loadAuth } from '../../utils/authStorage'
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import * as authService from "../../services/authService";
 
-// remember = the "Keep me logged in" checkbox
-export const loginUser = createAsyncThunk('auth/login', async ({ email, password, remember }) => {
-  const result = await authService.login(email, password)
-  return { ...result, remember }
-})
+// remember = the "Keep me logged in" checkbox (the server makes the cookie last 7 days)
+export const loginUser = createAsyncThunk(
+  "auth/login",
+  ({ email, password, remember }) =>
+    authService.login(email, password, remember),
+);
 
-export const registerUser = createAsyncThunk('auth/register', ({ name, email, password }) =>
-  authService.register(name, email, password),
-)
+export const registerUser = createAsyncThunk(
+  "auth/register",
+  ({ name, email, password }) => authService.register(name, email, password),
+);
+
+// Runs once when the app loads: asks the server who the cookie belongs to
+export const checkSession = createAsyncThunk("auth/checkSession", () =>
+  authService.getCurrentUser(),
+);
+
+export const logoutUser = createAsyncThunk("auth/logout", () =>
+  authService.logout(),
+);
 
 const authSlice = createSlice({
-  name: 'auth',
-  // Start logged in if a previous session was saved in localStorage
+  name: "auth",
   initialState: {
     user: null,
-    token: null,
-    remember: true,
-    ...loadAuth(),
-    status: 'idle',
+    sessionChecked: false, // false until checkSession finishes, so we don't bounce to /login too early
+    status: "idle",
     error: null,
   },
-  reducers: {
-    logout(state) {
-      state.user = null
-      state.token = null
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
+      .addCase(checkSession.fulfilled, (state, action) => {
+        state.user = action.payload;
+        state.sessionChecked = true;
+      })
+      .addCase(checkSession.rejected, (state) => {
+        state.user = null; // server unreachable: treat as logged out
+        state.sessionChecked = true;
+      })
       .addCase(loginUser.pending, (state) => {
-        state.status = 'loading'
-        state.error = null
+        state.status = "loading";
+        state.error = null;
       })
       .addCase(loginUser.fulfilled, (state, action) => {
-        state.status = 'idle'
-        state.user = action.payload.user
-        state.token = action.payload.token
-        state.remember = action.payload.remember
-      })
-      .addCase(registerUser.fulfilled, (state, action) => {
-        state.user = action.payload.user
-        state.token = action.payload.token
-        state.remember = true
+        state.status = "idle";
+        state.user = action.payload.user;
       })
       .addCase(loginUser.rejected, (state, action) => {
-        state.status = 'idle'
-        state.error = action.error.message
+        state.status = "idle";
+        state.error = action.error.message;
       })
+      .addCase(registerUser.fulfilled, (state, action) => {
+        state.user = action.payload.user;
+      })
+      // Log out locally even if the request fails, so the button always works
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+      })
+      .addCase(logoutUser.rejected, (state) => {
+        state.user = null;
+      });
   },
-})
+});
 
-export const { logout } = authSlice.actions
-export default authSlice.reducer
+export default authSlice.reducer;
