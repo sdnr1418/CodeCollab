@@ -1,68 +1,38 @@
-import { db, saveDb } from '../utils/mockDb'
-import { mockDelay } from '../utils/mockDelay'
+// Phase 2: files live in MongoDB (see server/src/routes/file.routes.js).
+// Every URL starts with the room, because the server checks you're a member of that room.
+import { api } from '../lib/api'
 
-const touchRoom = (roomId) => {
-  const room = db.rooms.find((r) => r.id === roomId)
-  if (room) room.updatedAt = new Date().toISOString() // drives "Edited 2 min ago" on the dashboard
-}
-
-const assertNameFree = (roomId, name, exceptId) => {
-  if (db.files.some((f) => f.roomId === roomId && f.name === name && f.id !== exceptId)) {
-    throw new Error(`A file named ${name} already exists`)
-  }
-}
+const filesUrl = (roomId) => `/rooms/${roomId}/files`
 
 export async function getFilesForRoom(roomId) {
-  return mockDelay(db.files.filter((f) => f.roomId === roomId))
+  const { data } = await api.get(filesUrl(roomId))
+  return data.files
 }
 
 export async function createFile(roomId, name) {
-  assertNameFree(roomId, name)
-  const file = { id: crypto.randomUUID(), roomId, name, content: '' }
-  db.files.push(file)
-  touchRoom(roomId)
-  saveDb()
-  return mockDelay(file, 100)
+  const { data } = await api.post(filesUrl(roomId), { name })
+  return data.file // a duplicate name comes back as a 409 error with the message
 }
 
-export async function renameFile(id, name) {
-  const file = db.files.find((f) => f.id === id)
-  assertNameFree(file.roomId, name, id)
-  file.name = name
-  touchRoom(file.roomId)
-  saveDb()
-  return mockDelay(file, 100)
+export async function renameFile(roomId, id, name) {
+  const { data } = await api.patch(`${filesUrl(roomId)}/${id}`, { name })
+  return data.file
 }
 
 // Used by the language dropdown: renames a file and, if given, replaces its content
-export async function changeFileLanguage(id, { name, content }) {
-  const file = db.files.find((f) => f.id === id)
-  assertNameFree(file.roomId, name, id)
-  file.name = name
-  if (content !== undefined) file.content = content
-  touchRoom(file.roomId)
-  saveDb()
-  return mockDelay(file, 100)
+export async function changeFileLanguage(roomId, id, { name, content }) {
+  const { data } = await api.patch(`${filesUrl(roomId)}/${id}`, { name, content })
+  return data.file
 }
 
-export async function deleteFile(id) {
-  const file = db.files.find((f) => f.id === id)
-  db.files = db.files.filter((f) => f.id !== id)
-  touchRoom(file.roomId)
-  saveDb()
-  return mockDelay(id, 100)
+export async function deleteFile(roomId, id) {
+  await api.delete(`${filesUrl(roomId)}/${id}`)
+  return id
 }
 
-// changes = [{ id, content }] for every file with unsaved edits
+// changes = [{ id, content }] for every file with unsaved edits. Returns the saved ids.
 export async function saveFiles(roomId, changes) {
-  changes.forEach(({ id, content }) => {
-    const file = db.files.find((f) => f.id === id)
-    if (file) file.content = content
-  })
-  touchRoom(roomId)
-  saveDb()
-  return mockDelay(
-    changes.map((c) => c.id),
-    200,
-  )
+  if (changes.length === 0) return []
+  const { data } = await api.patch(filesUrl(roomId), { changes })
+  return data.saved
 }
