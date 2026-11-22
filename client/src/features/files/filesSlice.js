@@ -11,11 +11,16 @@ export const createFile = createAsyncThunk('files/create', ({ roomId, name }) =>
   fileService.createFile(roomId, name),
 )
 
-export const renameFile = createAsyncThunk('files/rename', ({ id, name }) =>
-  fileService.renameFile(id, name),
+// Rename and delete only get the file id, so look up which room it's in
+const roomOf = (getState, id) => getState().files.items.find((f) => f.id === id)?.roomId
+
+export const renameFile = createAsyncThunk('files/rename', ({ id, name }, { getState }) =>
+  fileService.renameFile(roomOf(getState, id), id, name),
 )
 
-export const deleteFile = createAsyncThunk('files/delete', (id) => fileService.deleteFile(id))
+export const deleteFile = createAsyncThunk('files/delete', (id, { getState }) =>
+  fileService.deleteFile(roomOf(getState, id), id),
+)
 
 // Saves every file with unsaved edits in one go (the Save button / Ctrl+S)
 export const saveFiles = createAsyncThunk('files/save', (roomId, { getState }) => {
@@ -34,7 +39,7 @@ export const changeFileLanguage = createAsyncThunk(
     const file = getState().files.items.find((f) => f.id === id)
     const plan = planLanguageChange(file, language)
     if (!plan) return { id, language } // colours only
-    const saved = await fileService.changeFileLanguage(id, plan)
+    const saved = await fileService.changeFileLanguage(file.roomId, id, plan)
     return { id, name: saved.name, content: plan.content }
   },
 )

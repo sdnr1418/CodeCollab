@@ -5,8 +5,9 @@ export const fetchMessages = createAsyncThunk('chat/fetch', (roomId) =>
   chatService.getMessagesForRoom(roomId),
 )
 
-export const sendMessage = createAsyncThunk('chat/send', ({ roomId, user, text }) =>
-  chatService.sendMessage({ roomId, user, text }),
+// The server knows who is sending from the login cookie, so only the text is sent
+export const sendMessage = createAsyncThunk('chat/send', ({ roomId, text }) =>
+  chatService.sendMessage({ roomId, text }),
 )
 
 const chatSlice = createSlice({
