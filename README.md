@@ -2,8 +2,6 @@
 
 A real-time collaborative code editor where multiple users can write, edit, run and discuss code together in one shared editor.
 
-Web Programming project, FAST-NUCES Lahore, by **Abdul Moiz (23L-2632)** and **Saad Nasir (23L-2625)**.
-
 ## Features
 - Register, log in and log out (JWT authentication)
 - Rooms with Owner and Member roles; create, join, delete, invite and remove members
