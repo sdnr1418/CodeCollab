@@ -1,23 +1,9 @@
-import { mockDelay } from '../utils/mockDelay'
+// Phase 2: the Run button sends the open file to our server, which runs it with Judge0
+// (see server/src/services/judge0.service.js). The result also goes live to the whole room.
+import { api } from '../lib/api'
 
-const COMMANDS = {
-  cpp: (file) => `g++ -std=c++17 ${file} -o main && ./main < input.txt`,
-  java: (file) => `javac ${file} && java Main`,
-  python: (file) => `python3 ${file}`,
-  javascript: (file) => `node ${file}`,
-}
-
-// Phase 1: fake output. Phase 3: POST to the backend, which calls Judge0.
-export async function runCode(fileName, language, code) {
-  const started = performance.now()
-  const command = (COMMANDS[language] ?? COMMANDS.python)(fileName)
-  const result = code.includes('#error')
-    ? { exitCode: 1, stdout: '', stderr: `${fileName}:1:2: error: #error directive` }
-    : {
-        exitCode: 0,
-        stdout: 'Shortest distances from node 0\n  0 → 1 : 3\n  0 → 2 : 1\n  0 → 3 : 4',
-        stderr: '',
-      }
-  const output = await mockDelay({ command, ...result }, 700)
-  return { ...output, timeMs: Math.round(performance.now() - started) }
+export async function runCode(roomId, fileName, language, code) {
+  // Longer than the usual 15 s: the server waits up to 20 s for Judge0, and we want its message
+  const { data } = await api.post(`/rooms/${roomId}/run`, { language, fileName, code }, { timeout: 30000 })
+  return data.result // { command, stdout, stderr, exitCode, timeMs, ranBy }
 }

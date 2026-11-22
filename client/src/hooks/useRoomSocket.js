@@ -9,6 +9,7 @@ import { socket } from '../lib/socket'
 import { presenceUpdated, roomUpdated, roomRemoved } from '../features/rooms/roomsSlice'
 import { messageReceived } from '../features/chat/chatSlice'
 import { fileAdded, fileUpdated, fileRemoved } from '../features/files/filesSlice'
+import { runResultReceived } from '../features/editor/outputSlice'
 
 function useRoomSocket(roomId) {
   const dispatch = useDispatch()
@@ -30,6 +31,7 @@ function useRoomSocket(roomId) {
       'file:created': (file) => file.roomId === roomId && dispatch(fileAdded(file)),
       'file:updated': (file) => file.roomId === roomId && dispatch(fileUpdated(file)),
       'file:deleted': ({ id }) => dispatch(fileRemoved(id)),
+      'run:result': (result) => dispatch(runResultReceived(result)), // someone pressed Run
       // "by" is who did it: you already know if you deleted the room or left it yourself
       'room:deleted': ({ id, by }) => {
         if (id === roomId && by !== userId) goToDashboard('The owner deleted this room')

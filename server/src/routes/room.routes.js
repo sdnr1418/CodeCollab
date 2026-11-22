@@ -19,6 +19,9 @@ import {
 import { validate } from '../middleware/validate.js'
 import { requireAuth } from '../middleware/requireAuth.js'
 import { requireRoomRole } from '../middleware/requireRoomRole.js'
+import { runLimiter } from '../middleware/rateLimiters.js'
+import { runRules } from '../validators/run.validators.js'
+import { runCode } from '../controllers/run.controller.js'
 import fileRoutes from './file.routes.js'
 import messageRoutes from './message.routes.js'
 
@@ -40,6 +43,9 @@ router.delete(
   validate,
   removeMember,
 )
+
+// Run code with Judge0 (Step 23)
+router.post('/:roomId/run', requireRoomRole('member'), runLimiter, runRules, validate, runCode)
 
 // Nested resources: /api/rooms/:roomId/files and /api/rooms/:roomId/messages
 router.use('/:roomId/files', fileRoutes)
