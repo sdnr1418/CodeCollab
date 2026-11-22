@@ -50,6 +50,7 @@ const initialState = {
   activeFileId: null,
   unsavedIds: [], // files edited since the last Save
   status: 'idle',
+  replaced: null, // { id, content }: code swapped by the language dropdown, for the editor to apply
 }
 
 const closeTab = (state, id) => {
@@ -72,6 +73,29 @@ const filesSlice = createSlice({
     tabClosed(state, action) {
       closeTab(state, action.payload)
     },
+    // Live editing keeps Redux in step with the editor. The server saves the file
+    // by itself (Step 22), so this doesn't mark it as unsaved.
+    fileContentSynced(state, action) {
+      const file = state.items.find((f) => f.id === action.payload.id)
+      if (file) file.content = action.payload.content
+    },
+    replacementApplied(state) {
+      state.replaced = null
+    },
+    // Someone else created, renamed or deleted a file (pushed live by the server)
+    fileAdded(state, action) {
+      if (!state.items.some((f) => f.id === action.payload.id)) state.items.push(action.payload)
+    },
+    fileUpdated(state, action) {
+      const file = state.items.find((f) => f.id === action.payload.id)
+      if (file) file.name = action.payload.name // content arrives through live editing
+    },
+    fileRemoved(state, action) {
+      const id = action.payload
+      state.items = state.items.filter((f) => f.id !== id)
+      state.unsavedIds = state.unsavedIds.filter((x) => x !== id)
+      closeTab(state, id)
+    },
     // Typing only changes Redux; the change is stored when the user saves
     fileContentChanged(state, action) {
       const { id, content } = action.payload
@@ -91,7 +115,8 @@ const filesSlice = createSlice({
         state.openTabIds = action.payload.slice(0, 3).map((f) => f.id)
       })
       .addCase(createFile.fulfilled, (state, action) => {
-        state.items.push(action.payload)
+        // The live "file:created" push may have added it already
+        if (!state.items.some((f) => f.id === action.payload.id)) state.items.push(action.payload)
         state.openTabIds.push(action.payload.id)
         state.activeFileId = action.payload.id
       })
@@ -112,6 +137,7 @@ const filesSlice = createSlice({
         if (content !== undefined) {
           file.content = content
           state.unsavedIds = state.unsavedIds.filter((x) => x !== id) // already saved by the service
+          state.replaced = { id, content } // CodeEditor puts it into the live document
         }
       })
       .addCase(deleteFile.fulfilled, (state, action) => {
@@ -126,7 +152,16 @@ const filesSlice = createSlice({
   },
 })
 
-export const { fileSelected, tabClosed, fileContentChanged } = filesSlice.actions
+export const {
+  fileSelected,
+  tabClosed,
+  fileContentChanged,
+  fileContentSynced,
+  fileAdded,
+  fileUpdated,
+  fileRemoved,
+  replacementApplied,
+} = filesSlice.actions
 
 export const selectActiveFile = (state) =>
   state.files.items.find((f) => f.id === state.files.activeFileId)

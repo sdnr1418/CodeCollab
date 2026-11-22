@@ -1,7 +1,14 @@
+import { useEffect, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import { useDispatch, useSelector } from 'react-redux'
 import { FileText } from 'lucide-react'
-import { fileContentChanged, selectActiveFile, selectActiveLanguage } from '../files/filesSlice'
+import {
+  fileContentSynced,
+  replacementApplied,
+  selectActiveFile,
+  selectActiveLanguage,
+} from '../files/filesSlice'
+import useCollabEditor from '../../hooks/useCollabEditor'
 
 // Two themes that match the Tailwind colours used in the rest of the app
 function defineThemes(monaco) {
@@ -49,7 +56,24 @@ function CodeEditor() {
   const file = useSelector(selectActiveFile)
   const language = useSelector(selectActiveLanguage)
   const { theme, fontSize } = useSelector((state) => state.editorSettings)
+  const user = useSelector((state) => state.auth.user)
   const dispatch = useDispatch()
+  const [editor, setEditor] = useState(null) // the Monaco instance, set once it has loaded
+  const replaced = useSelector((state) => state.files.replaced)
+
+  useCollabEditor(editor, file?.id, user) // live typing and cursors for the open file
+
+  // The editor's text belongs to the live document, so Redux doesn't push text into it.
+  // The one exception: the language dropdown swapping untouched starter code.
+  useEffect(() => {
+    const model = editor?.getModel()
+    if (!replaced || !model || replaced.id !== file?.id) return
+    if (model.getValue() !== replaced.content) {
+      const fullRange = model.getFullModelRange()
+      model.pushEditOperations([], [{ range: fullRange, text: replaced.content }], () => null)
+    }
+    dispatch(replacementApplied())
+  }, [replaced, editor, file?.id, dispatch])
 
   if (!file) {
     return (
@@ -67,8 +91,9 @@ function CodeEditor() {
       beforeMount={defineThemes}
       path={file.id} // a separate model per file keeps each file's undo history
       language={language}
-      value={file.content}
-      onChange={(value) => dispatch(fileContentChanged({ id: file.id, content: value ?? '' }))}
+      defaultValue={file.content} // only for the first moment; then the live document takes over
+      onMount={setEditor}
+      onChange={(value) => dispatch(fileContentSynced({ id: file.id, content: value ?? '' }))}
       loading={<div className="h-full w-full bg-gray-950" />}
       options={{
         fontSize,

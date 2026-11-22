@@ -7,9 +7,23 @@ import { File } from '../models/File.js'
 import { Message, addSystemMessage } from '../models/Message.js'
 import { User } from '../models/User.js'
 import { STARTER_FILES } from '../utils/starterFiles.js'
+import { toRoom, kickUser, closeRoom } from '../sockets/realtime.js'
 
 const MEMBER_FIELDS = 'name color'
 const withMembers = (room) => room.populate('members.user', MEMBER_FIELDS)
+
+// Saves a system note ("Leo Kim joined the room") and shows it live in everyone's chat
+async function announce(room, text) {
+  const note = await addSystemMessage(room._id, text)
+  toRoom(room.code, 'chat:message', { ...note.toJSON(), roomId: room.code })
+}
+
+// Sends the updated room (name, members) to everyone who has it open
+async function sendRoomUpdate(room) {
+  const json = (await withMembers(room)).toJSON()
+  toRoom(room.code, 'room:updated', json)
+  return json
+}
 
 // GET /api/rooms  -> rooms I own or joined, most recently edited first
 export async function listMyRooms(req, res) {
@@ -50,8 +64,8 @@ export async function joinRoom(req, res) {
 
   room.members.push({ user: req.user._id, role: 'member' })
   await room.save()
-  await addSystemMessage(room._id, `${req.user.name} joined the room`)
-  res.json({ room: await withMembers(room) })
+  await announce(room, `${req.user.name} joined the room`)
+  res.json({ room: await sendRoomUpdate(room) })
 }
 
 // GET /api/rooms/:roomId  (members only)
@@ -63,7 +77,7 @@ export async function getRoom(req, res) {
 export async function renameRoom(req, res) {
   req.room.name = req.body.name
   await req.room.save()
-  res.json({ room: await withMembers(req.room) })
+  res.json({ room: await sendRoomUpdate(req.room) })
 }
 
 // DELETE /api/rooms/:roomId  (owner only)
@@ -72,6 +86,8 @@ export async function deleteRoom(req, res) {
   await File.deleteMany({ room: req.room._id })
   await Message.deleteMany({ room: req.room._id })
   await req.room.deleteOne()
+  toRoom(req.room.code, 'room:deleted', { id: req.room.code, by: req.user.id }) // everyone back to the dashboard
+  await closeRoom(req.room.code)
   res.json({ id: req.room.code })
 }
 
@@ -94,9 +110,12 @@ export async function removeMember(req, res) {
   room.members = room.members.filter((m) => !m.user.equals(targetId))
   await room.save()
   const target = await User.findById(targetId)
-  await addSystemMessage(
-    room._id,
+  await announce(
+    room,
     isSelf ? `${target.name} left the room` : `${target.name} was removed from the room`,
   )
-  res.json({ room: await withMembers(room) })
+  const json = await sendRoomUpdate(room)
+  toRoom(room.code, 'member:removed', { userId: targetId, by: req.user.id })
+  await kickUser(room.code, targetId) // their live connection to this room closes now
+  res.json({ room: json })
 }

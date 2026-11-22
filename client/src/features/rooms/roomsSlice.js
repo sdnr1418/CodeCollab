@@ -41,10 +41,31 @@ const dropRoom = (state, action) => {
   if (state.current?.id === action.payload) state.current = null
 }
 
+// Sets the open room, with the green "online" dots from the latest presence update
+const setCurrent = (state, room) => {
+  const ids = state.onlineIds
+  state.current = ids.length
+    ? { ...room, members: room.members.map((m) => ({ ...m, online: ids.includes(m.id) })) }
+    : room
+}
+
 const roomsSlice = createSlice({
   name: 'rooms',
-  initialState: { items: [], status: 'idle', current: null, currentStatus: 'idle' },
-  reducers: {},
+  initialState: { items: [], status: 'idle', current: null, currentStatus: 'idle', onlineIds: [] },
+  // Live updates from Socket.IO (hooks/useRoomSocket.js)
+  reducers: {
+    presenceUpdated(state, action) {
+      state.onlineIds = action.payload
+      if (state.current) setCurrent(state, state.current)
+    },
+    roomUpdated(state, action) {
+      const room = action.payload
+      const index = state.items.findIndex((r) => r.id === room.id)
+      if (index !== -1) state.items[index] = room
+      if (state.current?.id === room.id) setCurrent(state, room)
+    },
+    roomRemoved: dropRoom,
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchRooms.pending, (state) => {
@@ -57,10 +78,11 @@ const roomsSlice = createSlice({
       .addCase(fetchRoom.pending, (state) => {
         state.currentStatus = 'loading'
         state.current = null
+        state.onlineIds = []
       })
       .addCase(fetchRoom.fulfilled, (state, action) => {
         state.currentStatus = 'idle'
-        state.current = action.payload
+        setCurrent(state, action.payload)
       })
       .addCase(fetchRoom.rejected, (state) => {
         state.currentStatus = 'error'
@@ -69,7 +91,7 @@ const roomsSlice = createSlice({
         state.items.unshift(action.payload)
       })
       .addCase(removeMember.fulfilled, (state, action) => {
-        state.current = action.payload
+        setCurrent(state, action.payload)
       })
       .addCase(joinRoom.fulfilled, (state, action) => {
         state.items.unshift(action.payload)
@@ -77,11 +99,13 @@ const roomsSlice = createSlice({
       .addCase(renameRoom.fulfilled, (state, action) => {
         const index = state.items.findIndex((r) => r.id === action.payload.id)
         if (index !== -1) state.items[index] = action.payload
-        if (state.current?.id === action.payload.id) state.current = action.payload
+        if (state.current?.id === action.payload.id) setCurrent(state, action.payload)
       })
       .addCase(deleteRoom.fulfilled, dropRoom)
       .addCase(leaveRoom.fulfilled, dropRoom)
   },
 })
+
+export const { presenceUpdated, roomUpdated, roomRemoved } = roomsSlice.actions
 
 export default roomsSlice.reducer

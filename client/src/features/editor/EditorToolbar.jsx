@@ -45,7 +45,7 @@ function EditorToolbar({ room, onOpenFiles, onOpenChat, chatOpen = false }) {
 
   const handleSave = async () => {
     await dispatch(saveFiles(room.id)).unwrap()
-    toast.success('All files saved')
+    toast.success('Saved. CHanges also save automatically as you type.')
   }
 
   return (

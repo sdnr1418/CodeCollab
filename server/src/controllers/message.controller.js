@@ -1,8 +1,9 @@
-// Chat history. Step 22 sends new messages live over Socket.IO; this REST version
-// loads the history and also works without sockets.
+// Chat. Sending goes through REST (validated and cleaned against XSS), then the saved
+// message is pushed live to everyone in the room over Socket.IO.
 import { Message } from '../models/Message.js'
 import { cleanText } from '../utils/sanitize.js'
 import { ApiError } from '../utils/ApiError.js'
+import { toRoom } from '../sockets/realtime.js'
 
 const SENDER_FIELDS = 'name color'
 
@@ -22,5 +23,7 @@ export async function sendMessage(req, res) {
 
   const message = await Message.create({ room: req.room._id, sender: req.user._id, text })
   await message.populate('sender', SENDER_FIELDS)
-  res.status(201).json({ message: { ...message.toJSON(), roomId: req.room.code } })
+  const json = { ...message.toJSON(), roomId: req.room.code }
+  toRoom(req.room.code, 'chat:message', json) // live for everyone else in the room
+  res.status(201).json({ message: json })
 }

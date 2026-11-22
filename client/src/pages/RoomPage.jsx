@@ -13,6 +13,7 @@ import RoomSidebar from '../features/rooms/RoomSidebar'
 import Drawer from '../components/ui/Drawer'
 import useMediaQuery from '../hooks/useMediaQuery'
 import useRoomShortcuts from '../hooks/useRoomShortcuts'
+import useRoomSocket from '../hooks/useRoomSocket'
 import usePageTitle from '../hooks/usePageTitle'
 import { fetchRoom } from '../features/rooms/roomsSlice'
 import { fetchFiles } from '../features/files/filesSlice'
@@ -42,6 +43,7 @@ function RoomPage() {
   }, [hasUnsaved])
 
   useRoomShortcuts(roomId)
+  useRoomSocket(roomId) // live updates for presence, files and chat
   usePageTitle(room?.name)
 
   useEffect(() => {
