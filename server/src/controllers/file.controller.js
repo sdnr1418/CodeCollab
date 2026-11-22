@@ -2,6 +2,7 @@
 import { File } from '../models/File.js'
 import { Room } from '../models/Room.js'
 import { ApiError } from '../utils/ApiError.js'
+import { toRoom } from '../sockets/realtime.js'
 
 // The API shape the client uses: { id, roomId, name, content, updatedAt }
 const toClient = (file, room) => ({ ...file.toJSON(), roomId: room.code })
@@ -35,7 +36,9 @@ export async function createFile(req, res) {
       updatedBy: req.user._id,
     })
     await touchRoom(req.room)
-    res.status(201).json({ file: toClient(file, req.room) })
+    const json = toClient(file, req.room)
+    toRoom(req.room.code, 'file:created', json) // shows up in everyone's file list
+    res.status(201).json({ file: json })
   } catch (err) {
     if (isDuplicateName(err)) throw new ApiError(409, `A file named ${req.body.name} already exists`)
     throw err
@@ -55,7 +58,9 @@ export async function updateFile(req, res) {
     throw err
   }
   await touchRoom(req.room)
-  res.json({ file: toClient(file, req.room) })
+  const json = toClient(file, req.room)
+  toRoom(req.room.code, 'file:updated', json) // e.g. renamed
+  res.json({ file: json })
 }
 
 // PATCH /api/rooms/:roomId/files  { changes: [{ id, content }] }  (the Save button)
@@ -77,5 +82,6 @@ export async function deleteFile(req, res) {
   const file = await findFile(req)
   await file.deleteOne()
   await touchRoom(req.room)
+  toRoom(req.room.code, 'file:deleted', { id: file.id })
   res.json({ id: file.id })
 }
