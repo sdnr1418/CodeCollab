@@ -21,6 +21,9 @@ export const env = {
   mongoUri: process.env.MONGODB_URI,
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  // Judge0 runs the code. The public instance needs no key; RapidAPI's needs JUDGE0_KEY.
+  judge0Url: (process.env.JUDGE0_URL || "https://ce.judge0.com").replace(/\/+$/, ""),
+  judge0Key: process.env.JUDGE0_KEY || "",
 };
 
 export const isProduction = env.nodeEnv === "production";

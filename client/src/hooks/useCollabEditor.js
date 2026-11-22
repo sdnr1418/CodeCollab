@@ -47,27 +47,51 @@ function useCollabEditor(editor, fileId, user) {
     const model = editor?.getModel()
     if (!model || !fileId) return
 
-    const doc = new Y.Doc()
-    // Connects to the "/yjs|<fileId>" namespace on our server. The login cookie goes with it.
-    const provider = new SocketIOProvider(window.location.origin, fileId, doc, {
-      autoConnect: true,
-      disableBc: true, // always sync through the server, even between tabs
-    })
-    provider.awareness.setLocalStateField('user', { name: user.name, color: colorHex(user.color) })
+    let live = null // the current { doc, provider, binding, hideRemoteCursors }
+    let retryTimer = null
 
-    const binding = new MonacoBinding(
-      doc.getText('monaco'),
-      model,
-      new Set([editor]),
-      provider.awareness,
-    )
-    const hideRemoteCursors = showRemoteCursors(provider.awareness)
+    function connect() {
+      const doc = new Y.Doc()
+      // Connects to the "/yjs|<fileId>" namespace on our server. The login cookie goes with it.
+      const provider = new SocketIOProvider(window.location.origin, fileId, doc, {
+        autoConnect: true,
+        disableBc: true, // always sync through the server, even between tabs
+      })
+      provider.awareness.setLocalStateField('user', { name: user.name, color: colorHex(user.color) })
 
-    return () => {
+      const binding = new MonacoBinding(
+        doc.getText('monaco'),
+        model,
+        new Set([editor]),
+        provider.awareness,
+      )
+      live = { doc, provider, binding, hideRemoteCursors: showRemoteCursors(provider.awareness) }
+
+      // If the connection drops (the server restarted, or the Wi-Fi blipped), the server may
+      // forget this document and load it again from MongoDB. Reconnecting our old copy would
+      // merge the two copies and double the text. So we throw our copy away and start fresh.
+      provider.on('status', ({ status }) => {
+        if (status !== 'disconnected' || live?.provider !== provider) return
+        disconnect()
+        retryTimer = setTimeout(connect, 1000)
+      })
+    }
+
+    function disconnect() {
+      if (!live) return
+      const { doc, provider, binding, hideRemoteCursors } = live
+      live = null // set first: destroying the provider fires one more "disconnected"
       hideRemoteCursors()
       binding.destroy()
       provider.destroy()
+      provider.socket.disconnect() // stop the old copy from reconnecting by itself
       doc.destroy()
+    }
+
+    connect()
+    return () => {
+      clearTimeout(retryTimer)
+      disconnect()
     }
   }, [editor, fileId, user.name, user.color])
 }
