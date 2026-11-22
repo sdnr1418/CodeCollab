@@ -1,20 +1,13 @@
-import { db, saveDb } from '../utils/mockDb'
-import { mockDelay } from '../utils/mockDelay'
+// Phase 2: chat messages live in MongoDB (see server/src/routes/message.routes.js).
+// The server adds who sent it (from your login cookie) and cleans the text against XSS.
+import { api } from '../lib/api'
 
 export async function getMessagesForRoom(roomId) {
-  return mockDelay(db.messages.filter((m) => m.roomId === roomId))
+  const { data } = await api.get(`/rooms/${roomId}/messages`)
+  return data.messages // latest 50, oldest first
 }
 
-export async function sendMessage({ roomId, user, text }) {
-  const message = {
-    id: crypto.randomUUID(),
-    roomId,
-    type: 'message',
-    user: { id: user.id, name: user.name, color: user.color },
-    text,
-    sentAt: new Date().toISOString(),
-  }
-  db.messages.push(message)
-  saveDb()
-  return mockDelay(message, 50)
+export async function sendMessage({ roomId, text }) {
+  const { data } = await api.post(`/rooms/${roomId}/messages`, { text })
+  return data.message
 }

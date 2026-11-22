@@ -58,6 +58,7 @@ function OutputPanel() {
         {output.status === 'idle' && (
           <span className="text-gray-600">Press Run to see your program&apos;s output here.</span>
         )}
+        {output.ranBy && <div className="text-xs text-gray-600">Run by {output.ranBy.name}</div>}
         {output.command && <div className="mb-3 text-gray-500">$ {output.command}</div>}
         {output.stdout && <div className="text-gray-200">{output.stdout}</div>}
         {output.stderr && <div className="text-red-400">{output.stderr}</div>}

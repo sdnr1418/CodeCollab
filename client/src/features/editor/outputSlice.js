@@ -2,11 +2,11 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import * as runService from '../../services/runService'
 import { selectActiveFile, selectActiveLanguage } from '../files/filesSlice'
 
-// Runs whichever file is open in the editor
+// Runs whichever file is open in the editor, with Judge0 on the server
 export const runActiveFile = createAsyncThunk('output/run', (_, { getState }) => {
   const state = getState()
   const file = selectActiveFile(state)
-  return runService.runCode(file.name, selectActiveLanguage(state), file.content)
+  return runService.runCode(file.roomId, file.name, selectActiveLanguage(state), file.content)
 })
 
 const initialState = {
@@ -16,6 +16,7 @@ const initialState = {
   stderr: '',
   exitCode: null,
   timeMs: null,
+  ranBy: null, // { id, name } of whoever pressed Run
 }
 
 const outputSlice = createSlice({
@@ -23,6 +24,8 @@ const outputSlice = createSlice({
   initialState,
   reducers: {
     outputCleared: () => initialState,
+    // Someone in the room ran code: everyone sees the same output (pushed by Socket.IO)
+    runResultReceived: (state, action) => ({ ...action.payload, status: 'done' }),
   },
   extraReducers: (builder) => {
     builder
@@ -38,5 +41,5 @@ const outputSlice = createSlice({
   },
 })
 
-export const { outputCleared } = outputSlice.actions
+export const { outputCleared, runResultReceived } = outputSlice.actions
 export default outputSlice.reducer

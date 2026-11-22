@@ -1,7 +1,9 @@
 // Every API route is mounted here under /api (see app.js).
-// Later steps add: router.use('/auth', authRoutes), router.use('/rooms', roomRoutes), ...
 import { Router } from "express";
 import { isDbConnected } from "../config/db.js";
+import { sendCsrfToken } from "../middleware/csrf.js";
+import authRoutes from "./auth.routes.js";
+import roomRoutes from "./room.routes.js";
 
 const router = Router();
 
@@ -13,5 +15,11 @@ router.get("/health", (req, res) => {
     time: new Date().toISOString(),
   });
 });
+
+// GET /api/csrf-token: the token the client must send with every change (Step 24)
+router.get("/csrf-token", sendCsrfToken);
+
+router.use("/auth", authRoutes); // /api/auth/register, /login, /logout, /me
+router.use("/rooms", roomRoutes); // /api/rooms/...
 
 export default router;

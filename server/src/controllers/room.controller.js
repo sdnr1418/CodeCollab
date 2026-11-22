@@ -1,0 +1,121 @@
+// Rooms: list, create, join, view, rename, delete, remove member / leave.
+// requireAuth sets req.user; requireRoomRole sets req.room.
+import { Room } from '../models/Room.js'
+import { ApiError } from '../utils/ApiError.js'
+import { makeRoomCode } from '../utils/roomCode.js'
+import { File } from '../models/File.js'
+import { Message, addSystemMessage } from '../models/Message.js'
+import { User } from '../models/User.js'
+import { STARTER_FILES } from '../utils/starterFiles.js'
+import { toRoom, kickUser, closeRoom } from '../sockets/realtime.js'
+
+const MEMBER_FIELDS = 'name color'
+const withMembers = (room) => room.populate('members.user', MEMBER_FIELDS)
+
+// Saves a system note ("Leo Kim joined the room") and shows it live in everyone's chat
+async function announce(room, text) {
+  const note = await addSystemMessage(room._id, text)
+  toRoom(room.code, 'chat:message', { ...note.toJSON(), roomId: room.code })
+}
+
+// Sends the updated room (name, members) to everyone who has it open
+async function sendRoomUpdate(room) {
+  const json = (await withMembers(room)).toJSON()
+  toRoom(room.code, 'room:updated', json)
+  return json
+}
+
+// GET /api/rooms  -> rooms I own or joined, most recently edited first
+export async function listMyRooms(req, res) {
+  const rooms = await Room.find({ 'members.user': req.user._id })
+    .sort({ updatedAt: -1 })
+    .populate('members.user', MEMBER_FIELDS)
+  res.json({ rooms })
+}
+
+// POST /api/rooms  { name, language }  -> I become the owner
+export async function createRoom(req, res) {
+  const { name, language } = req.body
+
+  // Codes are random, so a clash is very unlikely, but try again if it happens
+  let code = makeRoomCode()
+  while (await Room.exists({ code })) code = makeRoomCode()
+
+  const room = await Room.create({
+    code,
+    name,
+    language,
+    owner: req.user._id,
+    members: [{ user: req.user._id, role: 'owner' }],
+  })
+  // Every new room starts with one file: main.cpp, Main.java, main.py or index.js
+  await File.create({ room: room._id, ...STARTER_FILES[language], updatedBy: req.user._id })
+
+  res.status(201).json({ room: await withMembers(room) })
+}
+
+// POST /api/rooms/join  { code }
+export async function joinRoom(req, res) {
+  const room = await Room.findOne({ code: req.body.code })
+  if (!room) throw new ApiError(404, 'No room found with that ID')
+  if (room.members.some((m) => m.user.equals(req.user._id))) {
+    throw new ApiError(409, 'You are already in this room')
+  }
+
+  room.members.push({ user: req.user._id, role: 'member' })
+  await room.save()
+  await announce(room, `${req.user.name} joined the room`)
+  res.json({ room: await sendRoomUpdate(room) })
+}
+
+// GET /api/rooms/:roomId  (members only)
+export async function getRoom(req, res) {
+  res.json({ room: await withMembers(req.room) })
+}
+
+// PATCH /api/rooms/:roomId  { name }  (owner only)
+export async function renameRoom(req, res) {
+  req.room.name = req.body.name
+  await req.room.save()
+  res.json({ room: await sendRoomUpdate(req.room) })
+}
+
+// DELETE /api/rooms/:roomId  (owner only)
+export async function deleteRoom(req, res) {
+  // Delete the room's files and chat messages too, so nothing is left behind
+  await File.deleteMany({ room: req.room._id })
+  await Message.deleteMany({ room: req.room._id })
+  await req.room.deleteOne()
+  toRoom(req.room.code, 'room:deleted', { id: req.room.code, by: req.user.id }) // everyone back to the dashboard
+  await closeRoom(req.room.code)
+  res.json({ id: req.room.code })
+}
+
+// DELETE /api/rooms/:roomId/members/:userId
+// The owner can remove anyone except themselves; a member can remove only themselves (= leave).
+export async function removeMember(req, res) {
+  const { room } = req
+  const targetId = req.params.userId
+  const isSelf = req.user._id.equals(targetId)
+  const isOwner = room.owner.equals(req.user._id)
+
+  if (!isSelf && !isOwner) throw new ApiError(403, 'Only the room owner can remove members')
+  if (room.owner.equals(targetId)) {
+    throw new ApiError(400, 'The owner cannot leave. Delete the room instead.')
+  }
+  if (!room.members.some((m) => m.user.equals(targetId))) {
+    throw new ApiError(404, 'That person is not in this room')
+  }
+
+  room.members = room.members.filter((m) => !m.user.equals(targetId))
+  await room.save()
+  const target = await User.findById(targetId)
+  await announce(
+    room,
+    isSelf ? `${target.name} left the room` : `${target.name} was removed from the room`,
+  )
+  const json = await sendRoomUpdate(room)
+  toRoom(room.code, 'member:removed', { userId: targetId, by: req.user.id })
+  await kickUser(room.code, targetId) // their live connection to this room closes now
+  res.json({ room: json })
+}

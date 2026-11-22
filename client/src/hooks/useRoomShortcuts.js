@@ -18,7 +18,7 @@ function useRoomShortcuts(roomId) {
 
       if (e.key === 's' || e.key === 'S') {
         e.preventDefault() // stop the browser's "Save page as" dialog
-        if (state.files.unsavedIds.length === 0) return toast('Nothing to save')
+        if (state.files.unsavedIds.length === 0) return toast.success('Changes saved automatically')
         await dispatch(saveFiles(roomId)).unwrap()
         toast.success('All files saved')
       }

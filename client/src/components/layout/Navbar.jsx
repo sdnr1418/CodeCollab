@@ -1,8 +1,8 @@
-import { useDispatch, useSelector } from 'react-redux'
-import { Link, useNavigate } from 'react-router-dom'
-import { Code2, LogOut } from 'lucide-react'
-import Avatar from '../ui/Avatar'
-import { logout } from '../../features/auth/authSlice'
+import { useDispatch, useSelector } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
+import { Code2, LogOut } from "lucide-react";
+import Avatar from "../ui/Avatar";
+import { logoutUser } from "../../features/auth/authSlice";
 
 export function Logo() {
   return (
@@ -12,22 +12,22 @@ export function Logo() {
       </span>
       CodeCollab
     </span>
-  )
+  );
 }
 
 function Navbar() {
-  const user = useSelector((state) => state.auth.user)
-  const dispatch = useDispatch()
-  const navigate = useNavigate()
+  const user = useSelector((state) => state.auth.user);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    dispatch(logout())
-    navigate('/')
-  }
+  const handleLogout = async () => {
+    await dispatch(logoutUser());
+    navigate("/");
+  };
 
   return (
     <nav className="flex h-14 shrink-0 items-center justify-between border-b border-gray-800 bg-gray-950 px-6">
-      <Link to={user ? '/dashboard' : '/'}>
+      <Link to={user ? "/dashboard" : "/"}>
         <Logo />
       </Link>
       {user ? (
@@ -50,7 +50,7 @@ function Navbar() {
         </Link>
       )}
     </nav>
-  )
+  );
 }
 
-export default Navbar
+export default Navbar;

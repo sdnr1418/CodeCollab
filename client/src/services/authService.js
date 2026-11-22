@@ -1,38 +1,28 @@
-// Phase 1: checks the local mock database. Phase 2: replace bodies with calls to the Express API.
-import { db, saveDb } from '../utils/mockDb'
-import { mockDelay } from '../utils/mockDelay'
+// Phase 2: talks to the Express API. The login token lives in an httpOnly cookie
+// that the browser sends by itself, so the React app never sees or stores it.
+import { api } from "../lib/api";
 
-const AVATAR_COLORS = [
-  'bg-indigo-500',
-  'bg-pink-600',
-  'bg-emerald-600',
-  'bg-sky-600',
-  'bg-amber-600',
-  'bg-violet-600',
-]
-
-const withoutPassword = ({ password: _omit, ...user }) => user
-
-export async function login(email, password) {
-  const user = db.users.find(
-    (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password,
-  )
-  if (!user) throw new Error('Invalid email or password')
-  return mockDelay({ user: withoutPassword(user), token: 'mock-jwt-token' })
+export async function login(email, password, remember) {
+  const { data } = await api.post("/auth/login", { email, password, remember });
+  return data; // { user }
 }
 
 export async function register(name, email, password) {
-  if (db.users.some((u) => u.email.toLowerCase() === email.toLowerCase())) {
-    throw new Error('An account with this email already exists')
+  const { data } = await api.post("/auth/register", { name, email, password });
+  return data; // { user }
+}
+
+export async function logout() {
+  await api.post("/auth/logout");
+}
+
+// Who is logged in right now? Returns null if nobody (no cookie, or it expired).
+export async function getCurrentUser() {
+  try {
+    const { data } = await api.get("/auth/me");
+    return data.user;
+  } catch (error) {
+    if (error.status === 401) return null;
+    throw error;
   }
-  const user = {
-    id: crypto.randomUUID(),
-    name,
-    email,
-    password, // Phase 2: the server hashes this with bcrypt; it never stays in the browser
-    color: AVATAR_COLORS[db.users.length % AVATAR_COLORS.length],
-  }
-  db.users.push(user)
-  saveDb()
-  return mockDelay({ user: withoutPassword(user), token: 'mock-jwt-token' })
 }

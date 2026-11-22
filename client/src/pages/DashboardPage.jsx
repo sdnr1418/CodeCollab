@@ -8,7 +8,6 @@ import RoomCard, { RoomCardSkeleton } from '../features/rooms/RoomCard'
 import CreateRoomModal from '../features/rooms/CreateRoomModal'
 import JoinRoomModal from '../features/rooms/JoinRoomModal'
 import { fetchRooms } from '../features/rooms/roomsSlice'
-import { resetDb } from '../utils/mockDb'
 import usePageTitle from '../hooks/usePageTitle'
 
 function RoomSection({ title, rooms, userId, loading }) {
@@ -46,7 +45,7 @@ function DashboardPage() {
   }, [location.state, navigate])
 
   useEffect(() => {
-    dispatch(fetchRooms(user.id))
+    dispatch(fetchRooms())
   }, [dispatch, user.id])
 
   const loading = status === 'loading'
