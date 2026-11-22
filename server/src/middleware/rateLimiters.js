@@ -1,6 +1,19 @@
-// Slows down password guessing (Lecture 24/25: authentication attacks).
+// Rate limits (Lecture 24/25): slow down password guessing, scripts and Run spam.
 import rateLimit from "express-rate-limit";
 
+// Every /api request: generous for a person using the app, stops a script hammering the server
+export const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 1000, // per IP
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: {
+    message:
+      "Too many requests. Please slow down and try again in a few minutes.",
+  },
+});
+
+// Login and register only
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   limit: 20, // 20 failed login/register attempts per IP in that time
@@ -18,5 +31,7 @@ export const runLimiter = rateLimit({
   keyGenerator: (req) => req.user.id,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  message: { message: "You're running code too fast. Wait a minute and try again." },
+  message: {
+    message: "You're running code too fast. Wait a minute and try again.",
+  },
 });

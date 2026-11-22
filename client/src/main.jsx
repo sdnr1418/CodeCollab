@@ -5,7 +5,6 @@ import { BrowserRouter } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { store } from './app/store'
 import App from './App'
-import './lib/monacoSetup' // bundled Monaco, needed for live editing
 import './index.css'
 
 createRoot(document.getElementById('root')).render(

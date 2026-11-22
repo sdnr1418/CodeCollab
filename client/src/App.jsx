@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import AppRoutes from "./routes/AppRoutes";
+import OfflineBanner from "./components/layout/OfflineBanner";
 import { checkSession } from "./features/auth/authSlice";
 
 function App() {
@@ -11,7 +12,12 @@ function App() {
     dispatch(checkSession());
   }, [dispatch]);
 
-  return <AppRoutes />;
+  return (
+    <>
+      <OfflineBanner />
+      <AppRoutes />
+    </>
+  );
 }
 
 export default App;
